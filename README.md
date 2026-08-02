@@ -120,3 +120,8 @@ This is still a small developer-preview surface:
 The live showcase is deployed at <https://abla.oxente.pt/>. From
 `examples/showcase`, `icy validate` and `icy deploy --watch` build and deploy
 the configured service.
+
+## License
+
+Abla MVC is available under the Mozilla Public License 2.0, matching the Abla
+compiler. See `LICENSE`.
