@@ -1,0 +1,17 @@
+#import("../src/abla-mvc.ab")
+
+@client
+fun incrementLocally(value: int): int = value + 1
+
+fun main: int {
+    val view = $mvcview
+        <button onclick={incrementLocally(4)} update="#counter">Local</button>
+    val rendered = view.render()
+    if (view.attributes.size != 4) return 1
+    if (view.attributes[1].name != "data-abla-client-export") return 2
+    if (view.attributes[1].value.slice(0, 16) !=
+        "abla_mvc_client_") return 3
+    if (rendered.size <= 150) return 4
+    if (mvcGeneratedActions().intActions.size != 0) return 5
+    0
+}

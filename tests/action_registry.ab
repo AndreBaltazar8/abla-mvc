@@ -1,0 +1,26 @@
+#import("../src/abla-mvc.ab")
+
+fun testAction(amount: int): MvcAction {
+    val view = $mvcview <span id="counter">{amount + 1}</span>
+    replace("#counter", view)
+}
+
+fun main: int {
+    val actions = mvcActions()
+    actions.intAction("testAction", testAction)
+    val request = httpParseRequest(
+        "POST /__abla/action/testAction?argument=41 HTTP/1.1\r\n\r\n"
+    )
+    val routed = HttpRequest(
+        request.method,
+        request.path,
+        request.query,
+        request.headers,
+        request.body,
+        ["name"],
+        ["testAction"]
+    )
+    val response = actions.dispatch(routed)
+    if (response.status == 200 &&
+        response.body == "<span id=\"counter\">42</span>") 0 else 1
+}

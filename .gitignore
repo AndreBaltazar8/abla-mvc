@@ -1,0 +1,12 @@
+/build/
+/.dist/
+**/build/
+**/.dist/
+**/assets/abla-mvc-client.wasm
+*.abi.json
+*.ll
+*.o
+.env
+.env.*
+*.key
+*.pem

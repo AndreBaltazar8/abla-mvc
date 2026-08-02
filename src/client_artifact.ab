@@ -1,0 +1,40 @@
+#import("abla/compiler")
+#import("client_identity.ab")
+
+compile fun mvcBuildClientArtifact(): void {
+    val functions = compiler.functionsAnnotated("client")
+    if (functions.size > 0) {
+        compiler.defineTarget(
+            "wasm32-module",
+            "wasm32-unknown-unknown",
+            "wasm",
+            "wasm-ld",
+            "none",
+            false,
+            true
+        )
+        var index = 0
+        while (index < functions.size) {
+            val reflected = functions[index]
+            val function = compiler.findFunction(
+                compiler.functionName(reflected)
+            )
+            if (compiler.parameterCount(function) == 1 &&
+                compiler.parameterType(function, 0) == "i64" &&
+                compiler.resultType(function) == "i64") {
+                compiler.contributeArtifactRoot(
+                    "abla-mvc-client",
+                    "wasm32-module",
+                    "module",
+                    "build/abla-mvc-client/client.wasm",
+                    function,
+                    mvcClientExportIdentifier(function),
+                    true,
+                    false
+                )
+            }
+            index = index + 1
+        }
+    }
+    return
+}

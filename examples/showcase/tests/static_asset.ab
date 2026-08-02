@@ -1,0 +1,36 @@
+#import("../../../src/abla-mvc.ab")
+#import("../static.ab")
+
+fun main: int {
+    val request = HttpRequest(
+        "GET",
+        "/assets/app.css",
+        "",
+        [],
+        "",
+        ["name"],
+        ["app.css"]
+    )
+    val response = showcaseStaticAsset(request)
+    val wasmRequest = HttpRequest(
+        "GET",
+        "/assets/abla-mvc-client.wasm",
+        "",
+        [],
+        "",
+        ["name"],
+        ["abla-mvc-client.wasm"]
+    )
+    val wasm = showcaseStaticAsset(wasmRequest)
+    var wasmMime = false
+    var header = 0
+    while (header < wasm.headers.size) {
+        if (wasm.headers[header].name == "Content-Type" &&
+            wasm.headers[header].value == "application/wasm") {
+            wasmMime = true
+        }
+        header = header + 1
+    }
+    if (response.status == 200 && response.body.size > 1000 &&
+        wasm.status == 200 && wasm.body.size > 8 && wasmMime) 0 else 1
+}

@@ -1,0 +1,57 @@
+#import("html.ab")
+
+class MvcAction(
+    val kind: int,
+    val target: string,
+    val content: MvcHtml
+)
+
+class MvcIntActionEntry(
+    val name: string,
+    val handler: (int) -> MvcAction
+)
+
+class MvcActions(
+    val intActions: array<MvcIntActionEntry>
+)
+
+fun mvcActions(): MvcActions = MvcActions([])
+
+fun replace(target: string, content: MvcHtml): MvcAction =
+    MvcAction(1, target, content)
+
+fun MvcActions.intAction(
+    name: string,
+    handler: (int) -> MvcAction
+): MvcActions {
+    this.intActions.append(MvcIntActionEntry(name, handler))
+    this
+}
+
+val mvcGeneratedActionRegistry: MvcActions = mvcActions()
+
+fun mvcGeneratedActions(): MvcActions = mvcGeneratedActionRegistry
+
+fun mvcRegisterGeneratedIntAction(
+    name: string,
+    handler: (int) -> MvcAction
+): int {
+    var found = false
+    var index = 0
+    while (index < mvcGeneratedActionRegistry.intActions.size) {
+        if (mvcGeneratedActionRegistry.intActions[index].name == name) {
+            found = true
+        }
+        index = index + 1
+    }
+    if (!found) {
+        mvcGeneratedActionRegistry.intActions.append(
+            MvcIntActionEntry(name, handler)
+        )
+    }
+    0
+}
+
+// The deferred finalizer performs exact handler validation and owns generated
+// server registration; the retained runtime expression is only action data.
+fun mvcActionArgument(argument: int): int = argument

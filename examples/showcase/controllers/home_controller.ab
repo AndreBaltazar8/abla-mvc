@@ -1,0 +1,12 @@
+fun homeIndex(request: HttpRequest): HttpResponse {
+    val query = request.queryParameter("query")
+    val queryMessage = if (query == "")
+        "No query value was provided."
+    else
+        "The query value is $query."
+
+    mvcHtmlResponse(homeView(HomeViewModel(
+        queryMessage,
+        counterCurrent()
+    )))
+}

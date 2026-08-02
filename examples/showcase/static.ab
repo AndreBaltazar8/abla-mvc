@@ -1,0 +1,21 @@
+#import("abla/http")
+#import("abla/sys/linux")
+#import("../../src/static.ab")
+
+fun showcaseStaticAsset(request: HttpRequest): HttpResponse {
+    val name = request.parameter("name")
+    var response = httpText("asset not found", 404)
+    // Request data is matched against an allowlist and never joined to a path.
+    if (name == "app.css") {
+        val contents = linuxReadFile("assets/app.css", 262144)
+        if (contents != "") response = mvcStylesheetResponse(contents)
+    }
+    if (name == "abla-mvc-client.wasm") {
+        val contents = linuxReadFile(
+            "assets/abla-mvc-client.wasm",
+            1048576
+        )
+        if (contents != "") response = mvcWasmResponse(contents)
+    }
+    response
+}

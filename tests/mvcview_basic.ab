@@ -1,0 +1,6 @@
+#import("../src/abla-mvc.ab")
+
+fun main: int {
+    val view = $mvcview <span>ok</span>
+    if (view.render() == "<span>ok</span>") 0 else 1
+}

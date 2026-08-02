@@ -1,0 +1,23 @@
+class HomeViewModel(
+    val queryMessage: string,
+    val counter: int
+)
+
+fun homeView(model: HomeViewModel): MvcHtml = $mvcview
+    <html>
+        <head>
+            <title>Abla MVC</title>
+            <script src="/__abla/mvc.js"></script>
+        </head>
+        <body>
+            <main>
+                <h1>Hello from Abla MVC</h1>
+                <p id="query">{model.queryMessage}</p>
+                <section>
+                    <h2>Server action counter</h2>
+                    <span id="counter">{model.counter}</span>
+                    <button onclick={incrementCounter(1)} update="#counter">Increment</button>
+                </section>
+            </main>
+        </body>
+    </html>

@@ -1,0 +1,52 @@
+#import("../../../src/abla-mvc.ab")
+#import("abla/sys/linux")
+#import("../models/counter.ab")
+#import("../models/session.ab")
+#import("../views/counter_view.ab")
+#import("../controllers/counter_controller.ab")
+#import("../controllers/client_counter_controller.ab")
+#import("../views/auth_view.ab")
+#import("../controllers/auth_controller.ab")
+
+fun testHeader(response: HttpResponse, name: string): string {
+    var value = ""
+    var index = 0
+    while (index < response.headers.size) {
+        if (response.headers[index].name == name) {
+            value = response.headers[index].value
+        }
+        index = index + 1
+    }
+    value
+}
+
+fun main: int {
+    val guest = httpParseRequest("GET / HTTP/1.1\r\n\r\n")
+    val guestResponse = dashboardIndex(guest)
+    val login = httpParseRequest(
+        "POST /login HTTP/1.1\r\nContent-Length: 29\r\n\r\nusername=admin&password=admin"
+    )
+    val loginResponse = loginSubmit(login)
+    val setCookie = testHeader(loginResponse, "Set-Cookie")
+    val token = mvcCookieValue(setCookie, "abla_session")
+    val member = httpParseRequest(
+        "GET /?query=secure HTTP/1.1\r\nCookie: abla_session=$token\r\n\r\n"
+    )
+    val memberResponse = dashboardIndex(member)
+    val badLogin = httpParseRequest(
+        "POST /login HTTP/1.1\r\n\r\nusername=admin&password=nope"
+    )
+    val badResponse = loginSubmit(badLogin)
+    val lowercaseHeader = httpParseRequest(
+        "POST / HTTP/1.1\r\ncontent-length: 3\r\n\r\na=1"
+    )
+    if (guestResponse.status == 303 &&
+        testHeader(guestResponse, "Location") == "/login" &&
+        loginResponse.status == 303 && token.size == 64 &&
+        memberResponse.status == 200 &&
+        memberResponse.body.size > 400 &&
+        badResponse.status == 401 &&
+        lowercaseHeader.header("Content-Length") == "3" &&
+        httpHeaderEnd("GET / HTTP/1.1\r\n\r\n") == 18 &&
+        httpDecimalLength("29", 100) == 29) 0 else 1
+}

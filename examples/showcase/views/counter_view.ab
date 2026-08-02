@@ -1,0 +1,2 @@
+fun counterValueView(value: int): MvcHtml = $mvcview
+    <span id="counter">{value}</span>

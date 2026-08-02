@@ -1,0 +1,60 @@
+#import("abla/http")
+
+fun mvcHexValue(byte: int): int {
+    var value = -1
+    if (byte >= 48 && byte <= 57) value = byte - 48
+    if (byte >= 65 && byte <= 70) value = byte - 65 + 10
+    if (byte >= 97 && byte <= 102) value = byte - 97 + 10
+    value
+}
+
+fun mvcFormDecode(value: string): string {
+    var output = ""
+    var index = 0
+    while (index < value.size) {
+        if (value[index] == 43) {
+            output = "${output} "
+        } else if (value[index] == 37 && index + 2 < value.size) {
+            val high = mvcHexValue(value[index + 1])
+            val low = mvcHexValue(value[index + 2])
+            if (high >= 0 && low >= 0) {
+                val decoded = high * 16 + low
+                val printable = " !\"#\$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+                if (decoded >= 32 && decoded <= 126) {
+                    output = "$output${printable.slice(
+                        decoded - 32,
+                        decoded - 31
+                    )}"
+                }
+                index = index + 2
+            } else {
+                output = "${output}%"
+            }
+        } else {
+            output = "$output${value.slice(index, index + 1)}"
+        }
+        index = index + 1
+    }
+    output
+}
+
+fun HttpRequest.formParameter(name: string): string {
+    var result = ""
+    var pairBegin = 0
+    var separator = 0
+    while (separator <= this.body.size) {
+        if (separator == this.body.size || this.body[separator] == 38) {
+            var equals = pairBegin
+            while (equals < separator && this.body[equals] != 61) {
+                equals = equals + 1
+            }
+            if (equals < separator &&
+                mvcFormDecode(this.body.slice(pairBegin, equals)) == name) {
+                result = mvcFormDecode(this.body.slice(equals + 1, separator))
+            }
+            pairBegin = separator + 1
+        }
+        separator = separator + 1
+    }
+    result
+}

@@ -1,0 +1,4 @@
+fun incrementCounter(amount: int): MvcAction {
+    val value = counterIncrement(amount)
+    replace("#counter", counterValueView(value))
+}

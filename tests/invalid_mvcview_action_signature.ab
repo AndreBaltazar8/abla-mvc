@@ -1,0 +1,9 @@
+#import("../src/abla-mvc.ab")
+
+fun invalidAction(value: string): MvcAction =
+    replace("#result", mvcHtmlText(value))
+
+fun main: int {
+    val view = $mvcview <button onclick={invalidAction("unsafe")}>Invalid</button>
+    if (view.render() == "") 1 else 0
+}

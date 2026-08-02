@@ -1,0 +1,148 @@
+class LoginViewModel(
+    val error: string
+)
+
+class DashboardViewModel(
+    val username: string,
+    val queryMessage: string,
+    val counter: int
+)
+
+fun loginView(model: LoginViewModel): MvcHtml = $mvcview
+    <html lang="en">
+        <head>
+            <meta charset="utf-8"></meta>
+            <meta name="viewport" content="width=device-width, initial-scale=1"></meta>
+            <title>Sign in · Abla Studio</title>
+            <link rel="stylesheet" href="/assets/app.css"></link>
+        </head>
+        <body class="login-page">
+            <div class="ambient ambient-one"></div>
+            <div class="ambient ambient-two"></div>
+            <main class="login-shell">
+                <section class="login-story">
+                    <div class="brand"><span class="brand-mark">A</span><span>Abla Studio</span></div>
+                    <div class="story-copy">
+                        <span class="eyebrow">COMPILED WEB EXPERIENCES</span>
+                        <h1>Build close to the language. Ship close to the metal.</h1>
+                        <p>Typed views, server actions, routing and sessions—composed in Abla and delivered as one native service.</p>
+                    </div>
+                    <div class="story-proof">
+                        <span class="live-dot"></span>
+                        <span>Running live on the Abla MVC runtime</span>
+                    </div>
+                </section>
+                <section class="login-panel">
+                    <div class="login-card">
+                        <span class="pill">DEVELOPER PREVIEW</span>
+                        <h2>Welcome back</h2>
+                        <p class="muted">Sign in to enter the protected workspace.</p>
+                        <p class="form-error" role="alert">{model.error}</p>
+                        <form method="post" action="/login" class="auth-form">
+                            <label for="username">Username</label>
+                            <div class="field-wrap"><span class="field-icon">@</span><input id="username" name="username" type="text" value="admin" autocomplete="username"></input></div>
+                            <label for="password">Password</label>
+                            <div class="field-wrap"><span class="field-icon">•</span><input id="password" name="password" type="password" value="admin" autocomplete="current-password"></input></div>
+                            <button type="submit" class="primary-button"><span>Enter workspace</span><span>→</span></button>
+                        </form>
+                        <div class="demo-note"><span>Demo access</span><code>admin / admin</code></div>
+                    </div>
+                    <p class="security-note">Protected by an HttpOnly, Secure server session.</p>
+                </section>
+            </main>
+        </body>
+    </html>
+
+fun dashboardHead(): MvcHtml = $mvcview
+    <head>
+        <meta charset="utf-8"></meta>
+        <meta name="viewport" content="width=device-width, initial-scale=1"></meta>
+        <title>Workspace · Abla Studio</title>
+        <link rel="stylesheet" href="/assets/app.css"></link>
+        <script src="/__abla/mvc.js"></script>
+    </head>
+
+fun dashboardSidebar(): MvcHtml = $mvcview
+    <aside class="sidebar">
+        <div class="brand"><span class="brand-mark">A</span><span>Abla Studio</span></div>
+        <nav class="nav-list">
+            <a class="nav-item active" href="/"><span>◈</span><span>Overview</span></a>
+            <a class="nav-item" href="/?query=rpc"><span>⌁</span><span>Server actions</span></a>
+            <a class="nav-item" href="/health"><span>♡</span><span>Runtime health</span></a>
+        </nav>
+        <div class="sidebar-card">
+            <span class="live-dot"></span>
+            <div><strong>Native service</strong><small>Healthy on oxente</small></div>
+        </div>
+    </aside>
+
+fun dashboardTopbar(model: DashboardViewModel): MvcHtml = $mvcview
+    <header class="topbar">
+        <div><span class="eyebrow">ABLA MVC / OVERVIEW</span><h1>Good to see you, {model.username}.</h1></div>
+        <form method="post" action="/logout"><button class="ghost-button" type="submit">Sign out</button></form>
+    </header>
+
+fun dashboardHero(): MvcHtml = $mvcview
+    <section class="hero-card">
+        <div class="hero-copy"><span class="pill light">LIVE SHOWCASE</span><h2>A complete request, rendered in one language.</h2><p>Authentication, session lookup, typed view rendering and HTML delivery all happened inside this compiled Abla server.</p></div>
+        <div class="code-orbit"><div class="orbit-glow"></div><code>$mvcview</code><span>native</span></div>
+    </section>
+
+fun dashboardStats(): MvcHtml = $mvcview
+    <section class="stat-grid">
+        <article class="stat-card"><span class="stat-icon violet">⌘</span><div><small>Runtime</small><strong>Native Abla</strong><span class="trend">● Online</span></div></article>
+        <article class="stat-card"><span class="stat-icon cyan">↯</span><div><small>Session</small><strong>Server-side</strong><span>256-bit token</span></div></article>
+        <article class="stat-card"><span class="stat-icon rose">UI</span><div><small>View layer</small><strong>$mvcview</strong><span>Escaped by default</span></div></article>
+    </section>
+
+fun dashboardInteraction(model: DashboardViewModel): MvcHtml = $mvcview
+    <article class="surface interaction-card">
+        <div class="section-heading"><div><span class="eyebrow">MIXED EXECUTION</span><h3>Server and Wasm counter</h3></div><span class="status-badge">No page reload</span></div>
+        <p>Run the same interaction as a registered server action or as an automatically extracted Abla WebAssembly function.</p>
+        <div class="counter-stage"><span id="counter">{model.counter}</span><div class="counter-actions"><button class="counter-button" onclick={incrementCounter(1)} update="#counter"><span>Server</span><span>+1</span></button><button class="counter-button client-button" onclick={incrementCounterLocally(model.counter)} update="#counter"><span>Client Wasm</span><span>+1</span></button></div></div>
+    </article>
+
+fun dashboardRequest(model: DashboardViewModel): MvcHtml = $mvcview
+    <article class="surface request-card">
+        <div class="section-heading"><div><span class="eyebrow">REQUEST MODEL</span><h3>Query parameter</h3></div><span class="request-method">GET</span></div>
+        <p id="query">{model.queryMessage}</p>
+        <div class="query-links"><a href="/?query=hello">Try ?query=hello</a><a href="/?query=abla">Try ?query=abla</a></div>
+    </article>
+
+fun dashboardFooter(): MvcHtml = $mvcview
+    <footer><span>Abla MVC developer preview</span><span>Session expires in 8 hours</span></footer>
+
+fun dashboardContent(model: DashboardViewModel): MvcHtml = mvcHtmlElement(
+    "section",
+    [mvcHtmlAttribute("class", "content-grid")],
+    [dashboardInteraction(model), dashboardRequest(model)]
+)
+
+fun dashboardWorkspace(model: DashboardViewModel): MvcHtml = mvcHtmlElement(
+    "main",
+    [mvcHtmlAttribute("class", "workspace")],
+    [
+        dashboardTopbar(model),
+        dashboardHero(),
+        dashboardStats(),
+        dashboardContent(model),
+        dashboardFooter()
+    ]
+)
+
+fun dashboardView(model: DashboardViewModel): MvcHtml = mvcHtmlElement(
+    "html",
+    [mvcHtmlAttribute("lang", "en")],
+    [
+        dashboardHead(),
+        mvcHtmlElement(
+            "body",
+            [mvcHtmlAttribute("class", "dashboard-page")],
+            [mvcHtmlElement(
+                "div",
+                [mvcHtmlAttribute("class", "dashboard-shell")],
+                [dashboardSidebar(), dashboardWorkspace(model)]
+            )]
+        )
+    ]
+)

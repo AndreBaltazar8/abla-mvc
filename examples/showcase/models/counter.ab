@@ -1,0 +1,8 @@
+var counterValue = 0
+
+fun counterCurrent(): int = counterValue
+
+fun counterIncrement(amount: int): int {
+    counterValue = counterValue + amount
+    counterValue
+}

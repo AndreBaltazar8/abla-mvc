@@ -1,0 +1,8 @@
+#import("../src/abla-mvc.ab")
+
+fun main: int {
+    val unsafe = "<script>\"Abla\" & 'MVC'</script>"
+    val view = $mvcview <p title={unsafe}>{unsafe}</p>
+    val expected = "<p title=\"&lt;script&gt;&quot;Abla&quot; &amp; &#39;MVC&#39;&lt;/script&gt;\">&lt;script&gt;&quot;Abla&quot; &amp; &#39;MVC&#39;&lt;/script&gt;</p>"
+    if (view.render() == expected) 0 else 1
+}

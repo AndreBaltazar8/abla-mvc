@@ -1,0 +1,314 @@
+#import("abla/compiler/parser")
+#import("abla/compiler")
+#import("html.ab")
+#import("action_core.ab")
+#import("client_identity.ab")
+
+compile fun mvcActionHash(text: string, seed: int, factor: int): int {
+    var value = seed
+    var index = 0
+    while (index < text.size) {
+        value = value * factor + text[index] + 1
+        value = value - value / 1000000007 * 1000000007
+        index = index + 1
+    }
+    value
+}
+
+compile fun mvcActionIdentifier(
+    cursor: ParserCursor,
+    expression: SyntaxExpression
+): string {
+    val identity =
+        "${parserSourceIdentity(cursor)}:${syntaxBegin(expression)}:${syntaxEnd(expression)}"
+    val first = mvcActionHash(identity, 17, 257)
+    val second = mvcActionHash(identity, 97, 263)
+    "abla_mvc_a_${first}_${second}"
+}
+
+compile fun mvcFunctionAnnotated(function: int, name: string): bool {
+    var found = false
+    var index = 0
+    while (index < compiler.annotationCount(function)) {
+        if (compiler.annotation(function, index) == name) found = true
+        index = index + 1
+    }
+    // A deferred call target can be reflected from a different imported
+    // declaration snapshot than functionsAnnotated(). Match the compiler's
+    // canonical identity so cross-module annotations remain exact.
+    val identity = compiler.functionIdentity(function)
+    val annotated = compiler.functionsAnnotated(name)
+    index = 0
+    while (!found && index < annotated.size) {
+        if (compiler.functionIdentity(annotated[index]) == identity) {
+            found = true
+        }
+        index = index + 1
+    }
+    found
+}
+
+compile fun mvcFinalizeAction(
+    actionIdentifier: string,
+    expression: SyntaxExpression
+): GeneratedModuleBuilder {
+    val target = typedCallTarget(expression)
+    val module = compilerGeneratedModule(actionIdentifier, expression)
+    val intType = compilerFindType("i64")
+    val actionType = compilerFindType("MvcAction")
+    var callValid = target >= 0 && intType >= 0 &&
+        typedExpressionKind(expression) == "call" &&
+        typedCallArgumentCount(expression) == 1
+    if (callValid) callValid = compiler.parameterCount(target) == 1 &&
+        compiler.parameterType(target, 0) == "i64"
+    val client = callValid && mvcFunctionAnnotated(target, "client")
+    val clientValid = client && compiler.resultType(target) == "i64"
+    val serverValid = callValid && !client && actionType >= 0 &&
+        compilerFunctionResultTypeHandle(target) == actionType
+
+    if (serverValid) {
+        val parameterNames: array<string> = ["argument"]
+        val parameterTypes: array<int> = [intType]
+        val targetArguments: array<SyntaxExpression> = [
+            syntaxIdentifier("argument")
+        ]
+        compilerGeneratedFunction(
+            module,
+            "adapter",
+            parameterNames,
+            parameterTypes,
+            actionType,
+            syntaxCallTarget(target, targetArguments)
+        )
+
+        val exportedArguments: array<SyntaxExpression> = [
+            syntaxIdentifier("argument")
+        ]
+        compilerGeneratedExportFunction(
+            module,
+            actionIdentifier,
+            parameterNames,
+            parameterTypes,
+            actionType,
+            compilerGeneratedDeclarationCall(module, 0, exportedArguments)
+        )
+
+        val registrationArguments: array<SyntaxExpression> = [
+            syntaxString(actionIdentifier),
+            compilerGeneratedDeclarationReference(module, 1)
+        ]
+        compilerGeneratedValue(
+            module,
+            "registration",
+            intType,
+            syntaxCall("mvcRegisterGeneratedIntAction", registrationArguments)
+        )
+    } else if (clientValid) {
+        val parameterNames: array<string> = ["argument"]
+        val parameterTypes: array<int> = [intType]
+        val targetArguments: array<SyntaxExpression> = [
+            syntaxIdentifier("argument")
+        ]
+        compilerGeneratedExportFunction(
+            module,
+            "${actionIdentifier}_client",
+            parameterNames,
+            parameterTypes,
+            intType,
+            syntaxCallTarget(target, targetArguments)
+        )
+    } else {
+        var invalidType = "MissingMvcActionType"
+        if (target < 0) invalidType = "MissingMvcResolvedTarget"
+        else if (typedExpressionKind(expression) != "call") {
+            invalidType = "MissingMvcDirectCall"
+        } else if (typedCallArgumentCount(expression) != 1) {
+            invalidType = "MissingMvcSingleArgument"
+        } else if (compiler.parameterCount(target) != 1) {
+            invalidType = "MissingMvcSingleParameter"
+        } else if (compiler.parameterType(target, 0) != "i64") {
+            invalidType = "MissingMvcIntegerParameter"
+        } else if (!client && compiler.resultType(target) == "i64") {
+            invalidType = "MissingMvcClientAnnotation"
+        } else if (client) {
+            invalidType = "MissingMvcClientIntegerResult"
+        } else {
+            invalidType = "MissingMvcServerActionResult"
+        }
+        val invalidNames: array<string> = []
+        val invalidTypes: array<int> = []
+        compilerGeneratedFunction(
+            module,
+            "invalidMvcActionSignature",
+            invalidNames,
+            invalidTypes,
+            compilerFindType(invalidType),
+            syntaxInteger(0)
+        )
+    }
+    module
+}
+
+compile fun mvcSyntaxUnaryCall(
+    name: string,
+    value: SyntaxExpression
+): SyntaxExpression {
+    val arguments: array<SyntaxExpression> = []
+    arguments.append(value)
+    syntaxCall(name, arguments)
+}
+
+compile fun mvcSyntaxAttribute(
+    name: string,
+    value: SyntaxExpression
+): SyntaxExpression {
+    val arguments: array<SyntaxExpression> = []
+    arguments.append(syntaxString(name))
+    arguments.append(value)
+    syntaxCall("mvcHtmlAttributeValue", arguments)
+}
+
+compile fun mvcParseActionAttributes(
+    cursor: ParserCursor
+): array<SyntaxExpression> {
+    val attributes: array<SyntaxExpression> = []
+    parserRawExpect(cursor, "{")
+    val action = parserParseAblaExpression(cursor)
+    parserRawExpect(cursor, "}")
+    if (syntaxKind(action) != "call" || syntaxChildCount(action) != 1) {
+        parserFail(
+            cursor,
+            "MVC action must be a direct function call with one argument"
+        )
+    }
+
+    val actionIdentifier = mvcActionIdentifier(cursor, action)
+    compilerRecordGeneratedExtensionRequest(
+        actionIdentifier,
+        actionIdentifier,
+        action,
+        mvcFinalizeAction
+    )
+
+    val retainedArguments: array<SyntaxExpression> = [syntaxChild(action, 0)]
+
+    attributes.append(mvcSyntaxAttribute(
+        "data-abla-action",
+        syntaxString(actionIdentifier)
+    ))
+    attributes.append(mvcSyntaxAttribute(
+        "data-abla-client-export",
+        syntaxString(mvcClientExportIdentifierForName(syntaxText(action)))
+    ))
+    attributes.append(mvcSyntaxAttribute(
+        "data-abla-argument",
+        syntaxCall("mvcActionArgument", retainedArguments)
+    ))
+    attributes
+}
+
+compile fun mvcParseAttribute(
+    cursor: ParserCursor
+): array<SyntaxExpression> {
+    val attributes: array<SyntaxExpression> = []
+    val sourceName = parserRawTakeName(cursor)
+    if (sourceName == "") parserFail(cursor, "expected an HTML attribute")
+    parserRawSkipWhitespace(cursor)
+    parserRawExpect(cursor, "=")
+    parserRawSkipWhitespace(cursor)
+
+    if (sourceName == "onclick") {
+        val actionAttributes = mvcParseActionAttributes(cursor)
+        var actionIndex = 0
+        while (actionIndex < actionAttributes.size) {
+            attributes.append(actionAttributes[actionIndex])
+            actionIndex = actionIndex + 1
+        }
+    } else {
+        var outputName = sourceName
+        if (sourceName == "update") outputName = "data-abla-update"
+
+        if (parserRawAt(cursor, "\"")) {
+            parserRawExpect(cursor, "\"")
+            val value = parserRawTakeUntil(cursor, "\"")
+            parserRawExpect(cursor, "\"")
+            attributes.append(mvcSyntaxAttribute(
+                outputName,
+                syntaxString(value)
+            ))
+        } else if (parserRawAt(cursor, "{")) {
+            parserRawExpect(cursor, "{")
+            val value = parserParseAblaExpression(cursor)
+            parserRawExpect(cursor, "}")
+            attributes.append(mvcSyntaxAttribute(outputName, value))
+        } else {
+            parserFail(
+                cursor,
+                "MVC attribute value must be quoted or an Abla expression"
+            )
+        }
+    }
+    attributes
+}
+
+compile fun mvcParseElement(cursor: ParserCursor): SyntaxExpression {
+    parserRawSkipWhitespace(cursor)
+    parserRawExpect(cursor, "<")
+    val tag = parserRawTakeName(cursor)
+    if (tag == "") parserFail(cursor, "expected an HTML tag name")
+
+    val attributes: array<SyntaxExpression> = []
+    parserRawSkipWhitespace(cursor)
+    while (!parserRawAt(cursor, ">")) {
+        val parsedAttributes = mvcParseAttribute(cursor)
+        var parsedAttribute = 0
+        while (parsedAttribute < parsedAttributes.size) {
+            attributes.append(parsedAttributes[parsedAttribute])
+            parsedAttribute = parsedAttribute + 1
+        }
+        parserRawSkipWhitespace(cursor)
+    }
+    parserRawExpect(cursor, ">")
+
+    val children: array<SyntaxExpression> = []
+    var closed = false
+    while (!closed) {
+        if (parserRawEnd(cursor)) {
+            closed = true
+            parserFail(cursor, "unterminated MVC view element")
+        } else if (parserRawAt(cursor, "</")) {
+            closed = true
+        } else if (parserRawAt(cursor, "<")) {
+            children.append(mvcParseElement(cursor))
+        } else if (parserRawAt(cursor, "{")) {
+            parserRawExpect(cursor, "{")
+            val value = parserParseAblaExpression(cursor)
+            parserRawExpect(cursor, "}")
+            children.append(mvcSyntaxUnaryCall("mvcHtmlDynamic", value))
+        } else {
+            val value = parserRawTakeUntil(cursor, "<{")
+            if (value != "") {
+                children.append(mvcSyntaxUnaryCall(
+                    "mvcHtmlText",
+                    syntaxString(value)
+                ))
+            }
+        }
+    }
+
+    parserRawExpect(cursor, "</")
+    val closingTag = parserRawTakeName(cursor)
+    if (closingTag != tag) {
+        parserFail(cursor, "closing MVC view tag does not match opening tag")
+    }
+    parserRawSkipWhitespace(cursor)
+    parserRawExpect(cursor, ">")
+
+    val arguments: array<SyntaxExpression> = []
+    arguments.append(syntaxString(tag))
+    arguments.append(syntaxArray(attributes))
+    arguments.append(syntaxArray(children))
+    syntaxCall("mvcHtmlElement", arguments)
+}
+
+#compilerRegisterSubparser("mvcview", mvcParseElement)

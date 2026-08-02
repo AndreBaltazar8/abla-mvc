@@ -1,0 +1,6 @@
+#import("../../src/client_artifact.ab")
+#import("controllers/client_counter_controller.ab")
+
+#compiler.transform(mvcBuildClientArtifact)
+
+fun main: int = 0

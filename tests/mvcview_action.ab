@@ -1,0 +1,33 @@
+#import("../src/abla-mvc.ab")
+
+fun incrementCounter(amount: int): MvcAction =
+    replace("#counter", mvcHtmlText("$amount"))
+
+fun main: int {
+    val actions = mvcGeneratedActions()
+    val registeredBeforeRender = actions.intActions.size == 1
+    val actionIdentifier = actions.intActions[0].name
+    val view = $mvcview <button onclick={incrementCounter(1)} update="#counter">Increment</button>
+    val clientCandidate = view.attributes[1].value
+    val rendered = view.render()
+    val request = httpParseRequest(
+        "POST /__abla/action/$actionIdentifier?argument=7 HTTP/1.1\r\n\r\n"
+    )
+    val routed = HttpRequest(
+        request.method,
+        request.path,
+        request.query,
+        request.headers,
+        request.body,
+        ["name"],
+        [actionIdentifier]
+    )
+    val response = actions.dispatch(routed)
+    if (registeredBeforeRender &&
+        actionIdentifier.slice(0, 11) == "abla_mvc_a_" &&
+        rendered ==
+        "<button data-abla-action=\"$actionIdentifier\" data-abla-client-export=\"$clientCandidate\" data-abla-argument=\"1\" data-abla-update=\"#counter\">Increment</button>" &&
+        actions.intActions.size == 1 &&
+        response.status == 200 &&
+        response.body == "7") 0 else 1
+}

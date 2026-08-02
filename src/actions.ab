@@ -1,0 +1,115 @@
+#import("abla/http")
+#import("action_core.ab")
+#import("http.ab")
+
+class MvcParsedInt(
+    val value: int,
+    val valid: bool
+)
+
+fun mvcParseInt(text: string): MvcParsedInt {
+    var value = 0
+    var valid = text.size > 0
+    var index = 0
+    while (index < text.size) {
+        val byte = text[index]
+        if (byte < 48 || byte > 57) {
+            valid = false
+        } else if (valid) {
+            value = value * 10 + byte - 48
+        }
+        index = index + 1
+    }
+    MvcParsedInt(value, valid)
+}
+
+fun MvcActions.dispatch(request: HttpRequest): HttpResponse {
+    val actionName = request.parameter("name")
+    val argument = mvcParseInt(request.queryParameter("argument"))
+    var selected = -1
+    var index = 0
+    while (index < this.intActions.size) {
+        if (this.intActions[index].name == actionName) selected = index
+        index = index + 1
+    }
+
+    var response = httpText("action not found", 404)
+    if (selected >= 0 && !argument.valid) {
+        response = httpText("invalid action argument", 400)
+    }
+    if (selected >= 0 && argument.valid) {
+        val handler = this.intActions[selected].handler
+        val action = handler(argument.value)
+        if (action.kind == 1) {
+            response = mvcHtmlFragmentResponse(
+                action.content,
+                action.target
+            )
+        } else {
+            response = httpText("unsupported action result", 500)
+        }
+    }
+    response
+}
+
+fun mvcActionHttpHandler(
+    actions: MvcActions
+): (HttpRequest) -> HttpResponse = {
+    request: HttpRequest -> actions.dispatch(request)
+}
+
+fun mvcBrowserRuntime(): string {
+    var output = "(function () {\n"
+    output = "${output}  var clientModule;\n"
+    output = "${output}  function loadClientModule() {\n"
+    output = "${output}    if (!clientModule) {\n"
+    output = "${output}      clientModule = fetch(\"/assets/abla-mvc-client.wasm\").then(function (response) {\n"
+    output = "${output}        if (!response.ok) throw new Error(\"Unable to load Abla client module\");\n"
+    output = "${output}        return response.arrayBuffer();\n"
+    output = "${output}      }).then(function (bytes) { return WebAssembly.instantiate(bytes, {}); });\n"
+    output = "${output}    }\n"
+    output = "${output}    return clientModule;\n"
+    output = "${output}  }\n"
+    output = "${output}  function dispatchServer(trigger, action, argument) {\n"
+    output = "${output}    var url = \"/__abla/action/\" + encodeURIComponent(action) + \"?argument=\" + encodeURIComponent(argument);\n"
+    output = "${output}    fetch(url, { method: \"POST\" }).then(function (response) {\n"
+    output = "${output}      return response.text().then(function (body) {\n"
+    output = "${output}        if (!response.ok) throw new Error(body);\n"
+    output = "${output}        var behavior = response.headers.get(\"Abla-Action\");\n"
+    output = "${output}        var selector = response.headers.get(\"Abla-Target\") || trigger.getAttribute(\"data-abla-update\");\n"
+    output = "${output}        if (behavior === \"replace\" && selector) {\n"
+    output = "${output}          var target = document.querySelector(selector);\n"
+    output = "${output}          if (target) target.outerHTML = body;\n"
+    output = "${output}        }\n"
+    output = "${output}      });\n"
+    output = "${output}    }).catch(function (error) { console.error(error); });\n"
+    output = "${output}  }\n"
+    output = "${output}  document.addEventListener(\"click\", function (event) {\n"
+    output = "${output}    var trigger = event.target.closest(\"[data-abla-action]\");\n"
+    output = "${output}    if (!trigger) return;\n"
+    output = "${output}    event.preventDefault();\n"
+    output = "${output}    var action = trigger.getAttribute(\"data-abla-action\");\n"
+    output = "${output}    var argument = trigger.getAttribute(\"data-abla-argument\");\n"
+    output = "${output}    var clientExport = trigger.getAttribute(\"data-abla-client-export\");\n"
+    output = "${output}    loadClientModule().then(function (loaded) {\n"
+    output = "${output}        var handler = loaded.instance.exports[clientExport];\n"
+    output = "${output}        if (typeof handler !== \"function\") {\n"
+    output = "${output}          dispatchServer(trigger, action, argument);\n"
+    output = "${output}          return;\n"
+    output = "${output}        }\n"
+    output = "${output}        var selector = trigger.getAttribute(\"data-abla-update\");\n"
+    output = "${output}        var target = selector && document.querySelector(selector);\n"
+    output = "${output}        var current = target ? target.textContent.trim() : argument;\n"
+    output = "${output}        var result = handler(BigInt(current));\n"
+    output = "${output}        if (target) target.textContent = result.toString();\n"
+    output = "${output}        trigger.setAttribute(\"data-abla-argument\", result.toString());\n"
+    output = "${output}    }).catch(function () {\n"
+    output = "${output}      dispatchServer(trigger, action, argument);\n"
+    output = "${output}    });\n"
+    output = "${output}  });\n"
+    output = "${output}})();\n"
+    output
+}
+
+fun mvcBrowserRuntimeEndpoint(request: HttpRequest): HttpResponse =
+    mvcJavaScriptResponse(mvcBrowserRuntime())

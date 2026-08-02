@@ -1,0 +1,23 @@
+#import("abla/compiler")
+
+compile fun mvcClientHash(text: string, seed: int, factor: int): int {
+    var value = seed
+    var index = 0
+    while (index < text.size) {
+        value = value * factor + text[index] + 1
+        value = value - value / 1000000007 * 1000000007
+        index = index + 1
+    }
+    value
+}
+
+compile fun mvcClientExportIdentifierForName(identity: string): string {
+    // Artifact roots currently require a unique top-level symbol. Its name is
+    // stable across native and client-only composition roots.
+    val first = mvcClientHash(identity, 31, 257)
+    val second = mvcClientHash(identity, 127, 263)
+    "abla_mvc_client_${first}_${second}"
+}
+
+compile fun mvcClientExportIdentifier(function: int): string =
+    mvcClientExportIdentifierForName(compiler.functionName(function))

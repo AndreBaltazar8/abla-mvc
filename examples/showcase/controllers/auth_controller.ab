@@ -1,0 +1,94 @@
+fun mvcRedirect(location: string): HttpResponse = HttpResponse(
+    303,
+    [
+        HttpHeader("Location", location),
+        HttpHeader("Cache-Control", "no-store")
+    ],
+    ""
+)
+
+fun mvcSessionCookie(token: string): string =
+    "abla_session=$token; Path=/; Max-Age=28800; HttpOnly; Secure; SameSite=Lax"
+
+fun mvcExpiredSessionCookie(): string =
+    "abla_session=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax"
+
+fun loginPage(request: HttpRequest): HttpResponse {
+    val authentication = mvcAuthenticate(request)
+    var response = mvcHtmlResponse(LoginViewModel("").login())
+    if (authentication.authenticated) response = mvcRedirect("/")
+    response
+}
+
+fun LoginViewModel.login(): MvcHtml = loginView(this)
+
+fun loginSubmit(request: HttpRequest): HttpResponse {
+    val username = request.formParameter("username")
+    val password = request.formParameter("password")
+    var response = mvcHtmlResponse(
+        loginView(LoginViewModel("The username or password is incorrect.")),
+        401
+    )
+    if (username == "admin" && password == "admin") {
+        mvcDestroySession(mvcSessionToken(request))
+        val session = mvcCreateSession(username)
+        if (session.created) {
+            response = mvcRedirect("/")
+            response.headers.append(HttpHeader(
+                "Set-Cookie",
+                mvcSessionCookie(session.token)
+            ))
+        } else {
+            response = mvcHtmlResponse(
+                loginView(LoginViewModel(
+                    "Secure session creation failed. Please try again."
+                )),
+                500
+            )
+        }
+    }
+    response
+}
+
+fun dashboardIndex(request: HttpRequest): HttpResponse {
+    val authentication = mvcAuthenticate(request)
+    var response = mvcRedirect("/login")
+    if (authentication.authenticated) {
+        val query = request.queryParameter("query")
+        val queryMessage = if (query == "")
+            "No query value was provided. Add ?query=anything to the URL."
+        else
+            "The query value is $query."
+        response = mvcHtmlResponse(dashboardView(DashboardViewModel(
+            authentication.username,
+            queryMessage,
+            counterCurrent()
+        )))
+    }
+    response
+}
+
+fun logoutSubmit(request: HttpRequest): HttpResponse {
+    mvcDestroySession(mvcSessionToken(request))
+    val response = mvcRedirect("/login")
+    response.headers.append(HttpHeader(
+        "Set-Cookie",
+        mvcExpiredSessionCookie()
+    ))
+    response
+}
+
+fun protectedActionHttpHandler(
+    actions: MvcActions
+): (HttpRequest) -> HttpResponse = {
+    request: HttpRequest -> protectedActionDispatch(actions, request)
+}
+
+fun protectedActionDispatch(
+    actions: MvcActions,
+    request: HttpRequest
+): HttpResponse {
+    val authentication = mvcAuthenticate(request)
+    if (authentication.authenticated) actions.dispatch(request)
+    else httpText("authentication required", 401)
+}

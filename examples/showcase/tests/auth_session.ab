@@ -1,0 +1,29 @@
+#import("../../../src/abla-mvc.ab")
+#import("abla/sys/linux")
+#import("../models/session.ab")
+
+fun main: int {
+    val first = mvcCreateSession("admin")
+    val second = mvcCreateSession("admin")
+    val firstAuthentication = mvcAuthenticateToken(first.token)
+    val secondAuthentication = mvcAuthenticateToken(second.token)
+    val cookie = mvcCookieValue(
+        "theme=dark; abla_session=${first.token}; mode=demo",
+        "abla_session"
+    )
+    val destroyed = mvcDestroySession(first.token)
+    val firstAfterLogout = mvcAuthenticateToken(first.token)
+    val secondAfterLogout = mvcAuthenticateToken(second.token)
+    mvcDestroySession(second.token)
+    if (first.created && second.created &&
+        first.token.size == 64 && second.token.size == 64 &&
+        first.token != second.token &&
+        firstAuthentication.authenticated &&
+        secondAuthentication.authenticated &&
+        firstAuthentication.username == "admin" &&
+        secondAuthentication.username == "admin" &&
+        cookie == first.token && destroyed &&
+        !firstAfterLogout.authenticated &&
+        secondAfterLogout.authenticated &&
+        mvcSessionStore.size == 2) 0 else 1
+}

@@ -1,0 +1,74 @@
+class MvcHtmlAttribute(
+    val name: string,
+    val value: string
+)
+
+// Kinds: 1 element, 2 escaped text.
+class MvcHtml(
+    val kind: int,
+    val tag: string,
+    val text: string,
+    val attributes: array<MvcHtmlAttribute>,
+    val children: array<MvcHtml>
+)
+
+fun mvcHtmlAttribute(name: string, value: string): MvcHtmlAttribute =
+    MvcHtmlAttribute(name, value)
+
+fun mvcHtmlAttributeValue(name: string, value: any): MvcHtmlAttribute =
+    MvcHtmlAttribute(name, "$value")
+
+fun mvcHtmlElement(
+    tag: string,
+    attributes: array<MvcHtmlAttribute>,
+    children: array<MvcHtml>
+): MvcHtml = MvcHtml(1, tag, "", attributes, children)
+
+fun mvcHtmlText(value: string): MvcHtml = MvcHtml(2, "", value, [], [])
+
+fun mvcHtmlDynamic(value: any): MvcHtml = mvcHtmlText("$value")
+
+fun mvcEscapeHtml(value: string): string {
+    var output = ""
+    var index = 0
+    while (index < value.size) {
+        val byte = value[index]
+        if (byte == 38) {
+            output = "${output}&amp;"
+        } else if (byte == 60) {
+            output = "${output}&lt;"
+        } else if (byte == 62) {
+            output = "${output}&gt;"
+        } else if (byte == 34) {
+            output = "${output}&quot;"
+        } else if (byte == 39) {
+            output = "${output}&#39;"
+        } else {
+            output = "$output${value.slice(index, index + 1)}"
+        }
+        index = index + 1
+    }
+    output
+}
+
+fun MvcHtml.render(): string {
+    var output = ""
+    if (this.kind == 2) output = mvcEscapeHtml(this.text)
+    if (this.kind == 1) {
+        output = "<${this.tag}"
+        var attributeIndex = 0
+        while (attributeIndex < this.attributes.size) {
+            val attribute = this.attributes[attributeIndex]
+            output = "$output ${attribute.name}=\"${mvcEscapeHtml(attribute.value)}\""
+            attributeIndex = attributeIndex + 1
+        }
+        output = "$output>"
+        var childIndex = 0
+        while (childIndex < this.children.size) {
+            output = "$output${this.children[childIndex].render()}"
+            childIndex = childIndex + 1
+        }
+        output = "$output</${this.tag}>"
+    }
+    output
+}

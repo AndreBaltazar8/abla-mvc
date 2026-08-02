@@ -1,0 +1,174 @@
+class MvcAuthentication(
+    val authenticated: bool,
+    val username: string,
+    val token: string
+)
+
+class MvcSessionCreation(
+    val created: bool,
+    val token: string
+)
+
+class MvcSession(
+    val token: string,
+    val username: string,
+    val expiresAt: int,
+    var active: bool
+)
+
+val mvcSessionStore: array<MvcSession> = []
+
+fun mvcMaximumSessions(): int = 64
+
+fun mvcUnixSeconds(): int {
+    val clock = nativeByteBuffer(16)
+    clock.storeI64(0, 0)
+    clock.storeI64(8, 0)
+    val measured = linuxSyscall2(
+        228,
+        0,
+        nativePointerAddress(clock.address)
+    )
+    var result = 0
+    if (measured == 0) result = clock.loadI64(0)
+    clock.close()
+    result
+}
+
+fun mvcSecureToken(): MvcSessionCreation {
+    val random = nativeByteBuffer(32)
+    var filled = 0
+    var attempts = 0
+    var available = true
+    while (filled < 32 && available && attempts < 8) {
+        val measured = linuxSyscall3(
+            318,
+            nativePointerAddress(random.pointerAt(filled)),
+            32 - filled,
+            0
+        )
+        if (measured > 0) filled = filled + measured
+        if (measured <= 0 && measured != -4) available = false
+        attempts = attempts + 1
+    }
+
+    var token = ""
+    val digits = "0123456789abcdef"
+    var index = 0
+    while (index < filled) {
+        val byte = random.load(index)
+        token = "$token${digits.slice(byte / 16, byte / 16 + 1)}"
+        token = "$token${digits.slice(
+            byte - byte / 16 * 16,
+            byte - byte / 16 * 16 + 1
+        )}"
+        index = index + 1
+    }
+    random.close()
+    MvcSessionCreation(filled == 32, token)
+}
+
+fun mvcCookieValue(cookieHeader: string, name: string): string {
+    var result = ""
+    var begin = 0
+    var cursor = 0
+    while (cursor <= cookieHeader.size) {
+        if (cursor == cookieHeader.size || cookieHeader[cursor] == 59) {
+            while (begin < cursor && cookieHeader[begin] == 32) begin = begin + 1
+            var equals = begin
+            while (equals < cursor && cookieHeader[equals] != 61) {
+                equals = equals + 1
+            }
+            if (equals < cursor &&
+                cookieHeader.slice(begin, equals) == name) {
+                result = cookieHeader.slice(equals + 1, cursor)
+            }
+            begin = cursor + 1
+        }
+        cursor = cursor + 1
+    }
+    result
+}
+
+fun mvcSessionToken(request: HttpRequest): string =
+    mvcCookieValue(request.header("Cookie"), "abla_session")
+
+fun mvcAuthenticateToken(token: string): MvcAuthentication {
+    val now = mvcUnixSeconds()
+    var authenticated = false
+    var username = ""
+    var index = 0
+    while (index < mvcSessionStore.size) {
+        val session = mvcSessionStore[index]
+        if (session.active && session.expiresAt <= now) {
+            session.active = false
+        }
+        if (session.active && token.size == 64 &&
+            session.token == token) {
+            authenticated = true
+            username = session.username
+        }
+        index = index + 1
+    }
+    MvcAuthentication(authenticated, username, token)
+}
+
+fun mvcAuthenticate(request: HttpRequest): MvcAuthentication =
+    mvcAuthenticateToken(mvcSessionToken(request))
+
+fun mvcCreateSession(username: string): MvcSessionCreation {
+    val created = mvcSecureToken()
+    if (created.created) {
+        val now = mvcUnixSeconds()
+        var available = -1
+        var oldest = -1
+        var oldestExpiry = 0
+        var index = 0
+        while (index < mvcSessionStore.size) {
+            val session = mvcSessionStore[index]
+            if (session.active && session.expiresAt <= now) {
+                session.active = false
+            }
+            if (!session.active && available < 0) available = index
+            if (session.active &&
+                (oldest < 0 ||
+                 session.expiresAt < oldestExpiry)) {
+                oldest = index
+                oldestExpiry = session.expiresAt
+            }
+            index = index + 1
+        }
+
+        val session = MvcSession(
+            created.token,
+            username,
+            now + 28800,
+            true
+        )
+        if (available >= 0) {
+            mvcSessionStore[available] = session
+        } else if (mvcSessionStore.size < mvcMaximumSessions()) {
+            mvcSessionStore.append(session)
+        } else if (oldest >= 0) {
+            // The public demo account has a bounded in-memory store. Once it
+            // is full, a new login rotates the session nearest to expiry.
+            mvcSessionStore[oldest] = session
+        }
+    }
+    created
+}
+
+fun mvcDestroySession(token: string): bool {
+    var destroyed = false
+    var index = 0
+    while (index < mvcSessionStore.size) {
+        val session = mvcSessionStore[index]
+        if (session.active && token.size == 64 &&
+            session.token == token) {
+            session.active = false
+            destroyed = true
+        }
+        index = index + 1
+    }
+    destroyed
+}
