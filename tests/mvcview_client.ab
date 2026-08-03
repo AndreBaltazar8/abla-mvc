@@ -3,15 +3,29 @@
 @client
 fun incrementLocally(value: int): int = value + 1
 
+@client
+fun addLocally(value: int, amount: int): int = value + amount
+
+@client
+fun resetLocally(): int = 0
+
 fun main: int {
     val view = $mvcview
         <button onclick={incrementLocally(4)} update="#counter">Local</button>
     val rendered = view.render()
+    val multi = $mvcview
+        <button onclick={addLocally(4, 2)} update="#counter">Add</button>
+    val reset = $mvcview
+        <button onclick={resetLocally()} update="#counter">Reset</button>
     if (view.attributes.size != 4) return 1
     if (view.attributes[1].name != "data-abla-client-export") return 2
     if (view.attributes[1].value.slice(0, 16) !=
         "abla_mvc_client_") return 3
     if (rendered.size <= 150) return 4
     if (mvcGeneratedActions().intActions.size != 0) return 5
+    if (multi.attributes[2].value != "2" ||
+        multi.attributes[3].value != "4" ||
+        multi.attributes[4].value != "2") return 6
+    if (reset.attributes.size != 3) return 7
     0
 }

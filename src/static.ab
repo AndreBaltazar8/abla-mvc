@@ -1,19 +1,20 @@
 #import("abla/http")
+#import("http.ab")
 
-fun mvcStylesheetResponse(contents: string): HttpResponse = HttpResponse(
-    200,
-    [
-        HttpHeader("Content-Type", "text/css; charset=utf-8"),
-        HttpHeader("Cache-Control", "public, max-age=300")
-    ],
-    contents
+fun mvcStylesheetResponse(contents: string): HttpResponse = mvcPublicCache(
+    HttpResponse(
+        200,
+        [HttpHeader("Content-Type", "text/css; charset=utf-8")],
+        contents
+    ),
+    300
 )
 
-fun mvcWasmResponse(contents: string): HttpResponse = HttpResponse(
-    200,
-    [
-        HttpHeader("Content-Type", "application/wasm"),
-        HttpHeader("Cache-Control", "public, max-age=300")
-    ],
-    contents
+fun mvcWasmResponse(contents: string): HttpResponse = mvcPublicCache(
+    HttpResponse(
+        200,
+        [HttpHeader("Content-Type", "application/wasm")],
+        contents
+    ),
+    300
 )

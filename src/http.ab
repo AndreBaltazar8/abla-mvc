@@ -47,6 +47,44 @@ fun mvcHtmlFragmentResponse(
     view.render()
 )
 
+fun mvcResponseHeader(
+    response: HttpResponse,
+    name: string,
+    value: string
+): HttpResponse {
+    val headers: array<HttpHeader> = []
+    var index = 0
+    while (index < response.headers.size) {
+        if (!httpAsciiEqualInsensitive(response.headers[index].name, name)) {
+            headers.append(response.headers[index])
+        }
+        index = index + 1
+    }
+    headers.append(HttpHeader(name, value))
+    HttpResponse(response.status, headers, response.body)
+}
+
+fun mvcNoStore(response: HttpResponse): HttpResponse =
+    mvcResponseHeader(response, "Cache-Control", "no-store")
+
+fun mvcPublicCache(
+    response: HttpResponse,
+    maximumAgeSeconds: int
+): HttpResponse = mvcResponseHeader(
+    response,
+    "Cache-Control",
+    "public, max-age=$maximumAgeSeconds"
+)
+
+fun mvcImmutableCache(
+    response: HttpResponse,
+    maximumAgeSeconds: int = 31536000
+): HttpResponse = mvcResponseHeader(
+    response,
+    "Cache-Control",
+    "public, max-age=$maximumAgeSeconds, immutable"
+)
+
 fun mvcJavaScriptResponse(source: string): HttpResponse = HttpResponse(
     200,
     [HttpHeader("Content-Type", "text/javascript; charset=utf-8")],

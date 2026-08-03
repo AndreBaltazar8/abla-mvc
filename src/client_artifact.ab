@@ -19,9 +19,15 @@ compile fun mvcBuildClientArtifact(): void {
             val function = compiler.findFunction(
                 compiler.functionName(reflected)
             )
-            if (compiler.parameterCount(function) == 1 &&
-                compiler.parameterType(function, 0) == "i64" &&
-                compiler.resultType(function) == "i64") {
+            var supported = compiler.resultType(function) == "i64"
+            var parameter = 0
+            while (parameter < compiler.parameterCount(function)) {
+                if (compiler.parameterType(function, parameter) != "i64") {
+                    supported = false
+                }
+                parameter = parameter + 1
+            }
+            if (supported) {
                 compiler.contributeArtifactRoot(
                     "abla-mvc-client",
                     "wasm32-module",

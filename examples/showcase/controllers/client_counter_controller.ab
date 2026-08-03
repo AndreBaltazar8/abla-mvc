@@ -1,2 +1,8 @@
 @client
 fun incrementCounterLocally(current: int): int = current + 1
+
+@client
+fun addCounterLocally(current: int, amount: int): int = current + amount
+
+@client
+fun resetCounterLocally(): int = 0

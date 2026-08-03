@@ -3,7 +3,7 @@ LIBRARY_DIR := $(abspath ../..)
 ABLAC_DIR := $(abspath ../../..)/ablac
 COMPILER := $(ABLAC_DIR)/build/ablac
 BUILD_DIR := $(EXAMPLE_DIR)/build
-TESTS := home_view auth_session auth_http auth_view static_asset
+TESTS := home_view auth_session auth_http auth_view static_asset poll_controller
 
 .PHONY: all client app example run test clean
 

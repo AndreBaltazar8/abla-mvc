@@ -1,0 +1,62 @@
+#import("../src/abla-mvc.ab")
+
+fun greet(name: string): MvcAction =
+    replace("#result", mvcHtmlText("Hello, $name"))
+
+fun clearResult(): MvcAction =
+    replace("#result", mvcHtmlText("cleared"))
+
+fun describe(amount: int, label: string): MvcAction =
+    replace("#result", mvcHtmlText("$amount $label"))
+
+fun routedActionRequest(name: string, query: string): HttpRequest {
+    val request = httpParseRequest(
+        "POST /__abla/action/$name?$query HTTP/1.1\r\n\r\n"
+    )
+    HttpRequest(
+        request.method,
+        request.path,
+        request.query,
+        request.headers,
+        request.body,
+        ["name"],
+        [name]
+    )
+}
+
+fun main: int {
+    val greeting = $mvcview
+        <button onclick={greet("Abla user")} update="#result">Greet</button>
+    val clear = $mvcview
+        <button onclick={clearResult()} update="#result">Clear</button>
+    val description = $mvcview
+        <button onclick={describe(3, "blue owls")} update="#result">Describe</button>
+
+    val actions = mvcGeneratedActions()
+    if (actions.stringActions.size != 1) return 1
+    if (actions.noArgumentActions.size != 1) return 2
+    if (actions.argumentsActions.size != 1) return 3
+
+    val greetingName = greeting.attributes[0].value
+    val greetingResponse = actions.dispatch(routedActionRequest(
+        greetingName,
+        "argument=Abla%20user"
+    ))
+    if (greetingResponse.body != "Hello, Abla user") return 4
+
+    val clearName = clear.attributes[0].value
+    val clearResponse = actions.dispatch(routedActionRequest(clearName, ""))
+    if (clearResponse.body != "cleared") return 5
+
+    val descriptionName = description.attributes[0].value
+    val descriptionResponse = actions.dispatch(routedActionRequest(
+        descriptionName,
+        "argument0=3&argument1=blue%20owls"
+    ))
+    if (descriptionResponse.body != "3 blue owls") return 6
+    if (description.attributes[2].name != "data-abla-argument-count" ||
+        description.attributes[2].value != "2") return 7
+    if (description.attributes[3].value != "3" ||
+        description.attributes[4].value != "blue owls") return 8
+    0
+}

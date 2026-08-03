@@ -11,11 +11,30 @@ class MvcIntActionEntry(
     val handler: (int) -> MvcAction
 )
 
-class MvcActions(
-    val intActions: array<MvcIntActionEntry>
+class MvcStringActionEntry(
+    val name: string,
+    val handler: (string) -> MvcAction
 )
 
-fun mvcActions(): MvcActions = MvcActions([])
+class MvcNoArgumentActionEntry(
+    val name: string,
+    val handler: () -> MvcAction
+)
+
+class MvcArgumentsActionEntry(
+    val name: string,
+    val argumentKinds: array<string>,
+    val handler: (array<string>) -> MvcAction
+)
+
+class MvcActions(
+    val intActions: array<MvcIntActionEntry>,
+    val stringActions: array<MvcStringActionEntry>,
+    val noArgumentActions: array<MvcNoArgumentActionEntry>,
+    val argumentsActions: array<MvcArgumentsActionEntry>
+)
+
+fun mvcActions(): MvcActions = MvcActions([], [], [], [])
 
 fun replace(target: string, content: MvcHtml): MvcAction =
     MvcAction(1, target, content)
@@ -25,6 +44,33 @@ fun MvcActions.intAction(
     handler: (int) -> MvcAction
 ): MvcActions {
     this.intActions.append(MvcIntActionEntry(name, handler))
+    this
+}
+
+fun MvcActions.stringAction(
+    name: string,
+    handler: (string) -> MvcAction
+): MvcActions {
+    this.stringActions.append(MvcStringActionEntry(name, handler))
+    this
+}
+
+fun MvcActions.noArgumentAction(
+    name: string,
+    handler: () -> MvcAction
+): MvcActions {
+    this.noArgumentActions.append(MvcNoArgumentActionEntry(name, handler))
+    this
+}
+
+fun MvcActions.argumentsAction(
+    name: string,
+    argumentKinds: array<string>,
+    handler: (array<string>) -> MvcAction
+): MvcActions {
+    this.argumentsActions.append(
+        MvcArgumentsActionEntry(name, argumentKinds, handler)
+    )
     this
 }
 
@@ -52,6 +98,81 @@ fun mvcRegisterGeneratedIntAction(
     0
 }
 
+fun mvcRegisterGeneratedStringAction(
+    name: string,
+    handler: (string) -> MvcAction
+): int {
+    var found = false
+    var index = 0
+    while (index < mvcGeneratedActionRegistry.stringActions.size) {
+        if (mvcGeneratedActionRegistry.stringActions[index].name == name) {
+            found = true
+        }
+        index = index + 1
+    }
+    if (!found) {
+        mvcGeneratedActionRegistry.stringActions.append(
+            MvcStringActionEntry(name, handler)
+        )
+    }
+    0
+}
+
+fun mvcRegisterGeneratedNoArgumentAction(
+    name: string,
+    handler: () -> MvcAction
+): int {
+    var found = false
+    var index = 0
+    while (index < mvcGeneratedActionRegistry.noArgumentActions.size) {
+        if (mvcGeneratedActionRegistry.noArgumentActions[index].name == name) {
+            found = true
+        }
+        index = index + 1
+    }
+    if (!found) {
+        mvcGeneratedActionRegistry.noArgumentActions.append(
+            MvcNoArgumentActionEntry(name, handler)
+        )
+    }
+    0
+}
+
+fun mvcRegisterGeneratedArgumentsAction(
+    name: string,
+    argumentKinds: array<string>,
+    handler: (array<string>) -> MvcAction
+): int {
+    var found = false
+    var index = 0
+    while (index < mvcGeneratedActionRegistry.argumentsActions.size) {
+        if (mvcGeneratedActionRegistry.argumentsActions[index].name == name) {
+            found = true
+        }
+        index = index + 1
+    }
+    if (!found) {
+        mvcGeneratedActionRegistry.argumentsActions.append(
+            MvcArgumentsActionEntry(name, argumentKinds, handler)
+        )
+    }
+    0
+}
+
 // The deferred finalizer performs exact handler validation and owns generated
 // server registration; the retained runtime expression is only action data.
 fun mvcActionArgument(argument: int): int = argument
+
+fun mvcActionIntegerAt(arguments: array<string>, index: int): int {
+    val text = arguments[index]
+    var value = 0
+    var cursor = 0
+    while (cursor < text.size) {
+        value = value * 10 + text[cursor] - 48
+        cursor = cursor + 1
+    }
+    value
+}
+
+fun mvcActionStringAt(arguments: array<string>, index: int): string =
+    arguments[index]

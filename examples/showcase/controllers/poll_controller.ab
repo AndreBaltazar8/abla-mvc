@@ -1,0 +1,12 @@
+#import("../../../src/abla-mvc.ab")
+
+var showcasePollCount = 0
+
+fun showcasePoll(request: HttpRequest): HttpResponse {
+    showcasePollCount = showcasePollCount + 1
+    var sessionState = "session missing"
+    if (request.header("Abla-Session") != "") sessionState = "session active"
+    val view = $mvcview
+        <span id="poll-value">Update {showcasePollCount}, {sessionState}</span>
+    mvcNoStore(mvcHtmlFragmentResponse(view, "#poll-value"))
+}

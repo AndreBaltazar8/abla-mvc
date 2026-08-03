@@ -6,6 +6,7 @@
 #import("views/counter_view.ab")
 #import("controllers/counter_controller.ab")
 #import("controllers/client_counter_controller.ab")
+#import("controllers/poll_controller.ab")
 #import("views/home_view.ab")
 #import("views/auth_view.ab")
 #import("controllers/home_controller.ab")
@@ -22,6 +23,7 @@ fun main: int {
     application.post("/login", loginSubmit)
     application.post("/logout", logoutSubmit)
     application.get("/health", applicationHealth)
+    application.get("/__abla/poll", showcasePoll)
     application.get("/assets/:name", showcaseStaticAsset)
     application.get("/__abla/mvc.js", mvcBrowserRuntimeEndpoint)
     application.post(

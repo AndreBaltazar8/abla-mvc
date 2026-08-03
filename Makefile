@@ -2,7 +2,7 @@ PROJECT_DIR := $(abspath .)
 ABLAC_DIR := $(abspath ../ablac)
 COMPILER := $(ABLAC_DIR)/build/ablac
 BUILD_DIR := $(PROJECT_DIR)/build
-TESTS := mvcview_basic mvcview_attributes mvcview_action mvcview_client html_escape action_registry
+TESTS := mvcview_basic mvcview_attributes mvcview_action mvcview_action_arguments mvcview_client browser_runtime html_escape http_helpers action_registry
 
 .PHONY: all compiler example app client run test test-library clean
 

@@ -25,7 +25,7 @@ fun loginView(model: LoginViewModel): MvcHtml = $mvcview
                     <div class="story-copy">
                         <span class="eyebrow">COMPILED WEB EXPERIENCES</span>
                         <h1>Build close to the language. Ship close to the metal.</h1>
-                        <p>Typed views, server actions, routing and sessions—composed in Abla and delivered as one native service.</p>
+                        <p>Typed views, server actions, routing and sessions, composed in Abla and delivered as one native service.</p>
                     </div>
                     <div class="story-proof">
                         <span class="live-dot"></span>
@@ -99,7 +99,7 @@ fun dashboardInteraction(model: DashboardViewModel): MvcHtml = $mvcview
     <article class="surface interaction-card">
         <div class="section-heading"><div><span class="eyebrow">MIXED EXECUTION</span><h3>Server and Wasm counter</h3></div><span class="status-badge">No page reload</span></div>
         <p>Run the same interaction as a registered server action or as an automatically extracted Abla WebAssembly function.</p>
-        <div class="counter-stage"><span id="counter">{model.counter}</span><div class="counter-actions"><button class="counter-button" onclick={incrementCounter(1)} update="#counter"><span>Server</span><span>+1</span></button><button class="counter-button client-button" onclick={incrementCounterLocally(model.counter)} update="#counter"><span>Client Wasm</span><span>+1</span></button></div></div>
+        <div class="counter-stage"><span id="counter">{model.counter}</span><div class="counter-actions"><button class="counter-button" onclick={incrementCounter(1)} update="#counter"><span>Server</span><span>+1</span></button><button class="counter-button client-button" onclick={incrementCounterLocally(model.counter)} update="#counter"><span>Client Wasm</span><span>+1</span></button><button class="counter-button client-button" onclick={addCounterLocally(model.counter, 5)} update="#counter"><span>Client Wasm</span><span>+5</span></button><button class="counter-button client-button" onclick={resetCounterLocally()} update="#counter"><span>Client Wasm</span><span>Reset</span></button></div></div>
     </article>
 
 fun dashboardRequest(model: DashboardViewModel): MvcHtml = $mvcview
@@ -110,7 +110,7 @@ fun dashboardRequest(model: DashboardViewModel): MvcHtml = $mvcview
     </article>
 
 fun dashboardFooter(): MvcHtml = $mvcview
-    <footer><span>Abla MVC developer preview</span><span>Session expires in 8 hours</span></footer>
+    <footer><span>Abla MVC developer preview</span><span poll="/__abla/poll" every="5s" update="#poll-value">Live runtime: <span id="poll-value">connecting</span></span><span>Session expires in 8 hours</span></footer>
 
 fun dashboardContent(model: DashboardViewModel): MvcHtml = mvcHtmlElement(
     "section",

@@ -1,6 +1,7 @@
 class MvcHtmlAttribute(
     val name: string,
-    val value: string
+    val value: string,
+    val boolean: bool
 )
 
 // Kinds: 1 element, 2 escaped text.
@@ -9,22 +10,36 @@ class MvcHtml(
     val tag: string,
     val text: string,
     val attributes: array<MvcHtmlAttribute>,
-    val children: array<MvcHtml>
+    val children: array<MvcHtml>,
+    val closing: int
 )
 
 fun mvcHtmlAttribute(name: string, value: string): MvcHtmlAttribute =
-    MvcHtmlAttribute(name, value)
+    MvcHtmlAttribute(name, value, false)
 
 fun mvcHtmlAttributeValue(name: string, value: any): MvcHtmlAttribute =
-    MvcHtmlAttribute(name, "$value")
+    MvcHtmlAttribute(name, "$value", false)
+
+fun mvcHtmlBooleanAttribute(name: string): MvcHtmlAttribute =
+    MvcHtmlAttribute(name, "", true)
 
 fun mvcHtmlElement(
     tag: string,
     attributes: array<MvcHtmlAttribute>,
     children: array<MvcHtml>
-): MvcHtml = MvcHtml(1, tag, "", attributes, children)
+): MvcHtml = MvcHtml(1, tag, "", attributes, children, 1)
 
-fun mvcHtmlText(value: string): MvcHtml = MvcHtml(2, "", value, [], [])
+fun mvcHtmlVoidElement(
+    tag: string,
+    attributes: array<MvcHtmlAttribute>
+): MvcHtml = MvcHtml(1, tag, "", attributes, [], 0)
+
+fun mvcHtmlSelfClosingElement(
+    tag: string,
+    attributes: array<MvcHtmlAttribute>
+): MvcHtml = MvcHtml(1, tag, "", attributes, [], 2)
+
+fun mvcHtmlText(value: string): MvcHtml = MvcHtml(2, "", value, [], [], 0)
 
 fun mvcHtmlDynamic(value: any): MvcHtml = mvcHtmlText("$value")
 
@@ -59,16 +74,20 @@ fun MvcHtml.render(): string {
         var attributeIndex = 0
         while (attributeIndex < this.attributes.size) {
             val attribute = this.attributes[attributeIndex]
-            output = "$output ${attribute.name}=\"${mvcEscapeHtml(attribute.value)}\""
+            output = "$output ${attribute.name}"
+            if (!attribute.boolean) {
+                output = "$output=\"${mvcEscapeHtml(attribute.value)}\""
+            }
             attributeIndex = attributeIndex + 1
         }
-        output = "$output>"
+        if (this.closing == 2) output = "$output />"
+        else output = "$output>"
         var childIndex = 0
-        while (childIndex < this.children.size) {
+        while (this.closing == 1 && childIndex < this.children.size) {
             output = "$output${this.children[childIndex].render()}"
             childIndex = childIndex + 1
         }
-        output = "$output</${this.tag}>"
+        if (this.closing == 1) output = "$output</${this.tag}>"
     }
     output
 }

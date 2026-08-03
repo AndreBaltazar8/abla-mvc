@@ -2,7 +2,13 @@
 
 fun main: int {
     val value = 42
-    val view = $mvcview <span id="answer" aria-label="Answer" data-value={value}>{value}</span>
+    val view = $mvcview
+        <custom-card id='answer' aria-label="Answer" data-value={value} hidden>
+            <input disabled data-mode='compact'>
+            <svg><path xlink:href="#answer" /></svg>
+            <br>
+            {value}
+        </custom-card>
     if (view.render() ==
-        "<span id=\"answer\" aria-label=\"Answer\" data-value=\"42\">42</span>") 0 else 1
+        "<custom-card id=\"answer\" aria-label=\"Answer\" data-value=\"42\" hidden>\n            <input disabled data-mode=\"compact\">\n            <svg><path xlink:href=\"#answer\" /></svg>\n            <br>\n            42\n        </custom-card>") 0 else 1
 }

@@ -1,0 +1,29 @@
+#import("../src/abla-mvc.ab")
+
+fun responseHeader(response: HttpResponse, name: string): string {
+    var value = ""
+    var index = 0
+    while (index < response.headers.size) {
+        if (httpAsciiEqualInsensitive(response.headers[index].name, name)) {
+            value = response.headers[index].value
+        }
+        index = index + 1
+    }
+    value
+}
+
+fun main: int {
+    val original = HttpResponse(
+        200,
+        [HttpHeader("Cache-Control", "public"), HttpHeader("X-Test", "yes")],
+        "ok"
+    )
+    val private = mvcNoStore(original)
+    val immutable = mvcImmutableCache(httpText("asset"), 60)
+    if (responseHeader(private, "cache-control") != "no-store") return 1
+    if (responseHeader(private, "X-Test") != "yes") return 2
+    if (private.headers.size != 2) return 3
+    if (responseHeader(immutable, "Cache-Control") !=
+        "public, max-age=60, immutable") return 4
+    0
+}

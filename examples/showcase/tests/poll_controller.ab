@@ -1,0 +1,16 @@
+#import("../../../src/abla-mvc.ab")
+#import("../controllers/poll_controller.ab")
+
+fun main: int {
+    val request = httpGet(
+        "/__abla/poll",
+        [HttpHeader("Abla-Session", "test-session")]
+    )
+    val response = showcasePoll(request)
+    if (response.status != 200) return 1
+    if (response.body !=
+        "<span id=\"poll-value\">Update 1, session active</span>") return 2
+    if (response.headers[3].name != "Cache-Control" ||
+        response.headers[3].value != "no-store") return 3
+    0
+}

@@ -9,9 +9,11 @@ The current library provides:
 - a typed HTML tree with attribute and text escaping;
 - the compile-time `$mvcview` HTML subparser;
 - expression interpolation and dynamic attributes;
-- `onclick={action(argument)}` syntax for typed server and client actions;
+- `onclick={action(...)}` syntax for typed server and client actions;
 - automatic server-action registration and POST dispatch;
-- automatic extraction of `@client (int) -> int` handlers to WebAssembly;
+- automatic extraction of integer-only `@client` handlers to WebAssembly;
+- declarative polling with anonymous per-tab session identity;
+- configurable browser runtime and cache-safe asset helpers;
 - a browser runtime that chooses the Wasm export or server RPC; and
 - HTTP, form, response, and static-response helpers.
 
@@ -108,13 +110,90 @@ opaque action identifier in the server allowlist. An explicitly annotated
 view emits metadata rather than inline JavaScript, and the runtime loads the
 client module once and falls back to the server action path where appropriate.
 
+Server actions may take no arguments or any number of `int` and `string`
+arguments:
+
+```abla
+fun clearCounter(): MvcAction =
+    replace("#counter", mvcHtmlText("0"))
+
+fun labelCounter(value: int, label: string): MvcAction =
+    replace("#counter", mvcHtmlText("$label: $value"))
+
+fun controls(value: int): MvcHtml = $mvcview
+    <div>
+        <button onclick={clearCounter()} update="#counter">Clear</button>
+        <button
+            onclick={labelCounter(value, "Current")}
+            update="#counter"
+        >Label</button>
+    </div>
+```
+
+Client actions may take any number of integer arguments and must return an
+integer. String client actions are reserved until Abla MVC has a stable string
+ABI for Wasm.
+
+## Declarative polling
+
+Use `poll`, `every`, and `update` to refresh an HTML fragment without writing
+browser JavaScript:
+
+```abla
+fun presence(): MvcHtml = $mvcview
+    <p id="presence" poll="/presence" every="5s" update="#presence">
+        Loading presence...
+    </p>
+```
+
+The runtime requests the endpoint immediately and then at the configured
+interval. It prevents overlapping requests, pauses while the page is hidden,
+and stops when the polling element leaves the document. Poll requests include
+an `Abla-Session` header containing a random ID scoped to the current browser
+tab. Applications decide whether and how to retain that session on the server.
+
+## Runtime and caching
+
+The default runtime continues to work at `/__abla/mvc.js`. Applications can
+configure versioned asset and action paths with a handler:
+
+```abla
+val runtime = mvcBrowserRuntimeOptions(
+    "/assets/abla-mvc-client.wasm?v=2026-08-03",
+    "/__abla/action/",
+    "force-cache"
+)
+application.get("/__abla/mvc.js", mvcBrowserRuntimeHandler(runtime))
+```
+
+Runtime JavaScript responses use `Cache-Control: no-store`. An application can
+use `mvcNoStore`, `mvcPublicCache`, or `mvcImmutableCache` with any response.
+Use immutable caching only when the asset URL contains a content or revision
+fingerprint. Abla's HTTP router automatically serves `HEAD` through the
+matching `GET` route while suppressing the body on the wire.
+
+## HTML syntax
+
+`$mvcview` supports custom element names, hyphenated and namespaced
+attributes, boolean attributes, single- or double-quoted values, dynamic Abla
+expressions, HTML void elements, and explicit self-closing elements:
+
+```abla
+fun field(): MvcHtml = $mvcview
+    <custom-field aria-label='Name' data-ready disabled>
+        <input name="name" required>
+        <svg><path xlink:href="#icon" /></svg>
+    </custom-field>
+```
+
 ## Current limits
 
 This is still a small developer-preview surface:
 
-- elements require matching closing tags;
-- attributes are quoted strings or `{Abla expressions}`;
-- events are direct calls with exactly one non-negative integer argument;
+- views currently require one root element;
+- event handlers must be direct calls;
+- server action parameters are limited to integers and strings;
+- client action parameters and results are limited to integers;
 - server results replace an HTML fragment;
 - client results currently update text content;
 - state and showcase sessions are process-local and in memory; and

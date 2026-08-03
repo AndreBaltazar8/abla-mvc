@@ -1,0 +1,40 @@
+#import("../src/abla-mvc.ab")
+
+fun runtimeContains(source: string, expected: string): bool {
+    var found = false
+    var index = 0
+    while (index + expected.size <= source.size && !found) {
+        if (source.slice(index, index + expected.size) == expected) {
+            found = true
+        }
+        index = index + 1
+    }
+    found
+}
+
+fun main: int {
+    val options = mvcBrowserRuntimeOptions(
+        "/assets/client.wasm?v=42",
+        "/rpc/",
+        "force-cache",
+        "example-session"
+    )
+    val runtime = mvcBrowserRuntime(options)
+    val view = $mvcview
+        <p poll="/presence" every="5s" update="#presence">Loading</p>
+    val rendered = view.render()
+    if (!runtimeContains(runtime, "/assets/client.wasm?v=42")) return 1
+    if (!runtimeContains(runtime, "var url = \"/rpc/\"")) return 2
+    if (!runtimeContains(runtime, "data-abla-argument-count")) return 3
+    if (!runtimeContains(runtime, "data-abla-poll")) return 4
+    if (!runtimeContains(runtime, "Abla-Session")) return 5
+    if (!runtimeContains(runtime, "force-cache")) return 6
+    if (rendered !=
+        "<p data-abla-poll=\"/presence\" data-abla-poll-every=\"5s\" data-abla-update=\"#presence\">Loading</p>") return 7
+    val handler = mvcBrowserRuntimeHandler(options)
+    val response = handler(httpGet("/runtime.js"))
+    if (response.status != 200 ||
+        response.headers[1].name != "Cache-Control" ||
+        response.headers[1].value != "no-store") return 8
+    0
+}
