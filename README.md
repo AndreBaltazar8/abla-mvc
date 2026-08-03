@@ -17,13 +17,10 @@ The current library provides:
 
 ## Use the library today
 
-Abla currently resolves relative modules and `abla/...` standard-library
-modules. It does not yet fetch Git or GitHub package dependencies. Until the
-package RFC lands, include this repository beside an application and import its
-public composition root by relative path:
+Import Abla MVC through Abla's GitHub package provider:
 
 ```abla
-#import("../../abla-mvc/src/abla-mvc.ab")
+#import(github("AndreBaltazar8/abla-mvc"))
 
 fun page(value: int): MvcHtml = $mvcview
     <main>
@@ -35,10 +32,17 @@ fun page(value: int): MvcHtml = $mvcview
     </main>
 ```
 
-`abla.toml` records the package name, version, and public entry module in the
-shape expected by Abla's early project support. The proposed Git dependency,
-lockfile, cache, vendoring, and offline behavior is documented in
-`../ablac/rfc/git-package-dependencies.md`.
+Resolve the dependency once from your application's project directory:
+
+```sh
+ablac package update --project .
+```
+
+This records the resolved GitHub HEAD revision in `abla.lock`. Commit that
+lockfile so ordinary and `--offline` builds use the same immutable revision;
+run `package update` again only when you intend to refresh dependencies. For
+local framework development, a relative import of `src/abla-mvc.ab` remains
+useful.
 
 ## Build and test
 
