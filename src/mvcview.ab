@@ -211,7 +211,10 @@ compile fun mvcParseAttribute(
     cursor: ParserCursor
 ): array<SyntaxExpression> {
     val attributes: array<SyntaxExpression> = []
-    val sourceName = parserRawTakeName(cursor)
+    // HTML attribute names may contain hyphens and colons. Read until the
+    // first attribute delimiter instead of using the alphanumeric-only name
+    // helper used for Abla identifiers and element names.
+    val sourceName = parserRawTakeUntil(cursor, " \t\r\n=>")
     if (sourceName == "") parserFail(cursor, "expected an HTML attribute")
     parserRawSkipWhitespace(cursor)
     parserRawExpect(cursor, "=")
