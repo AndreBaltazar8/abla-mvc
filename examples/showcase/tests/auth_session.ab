@@ -1,6 +1,6 @@
-#import("../../../src/abla-mvc.ab")
-#import("abla/sys/linux")
-#import("../models/session.ab")
+import "../../../src/abla-mvc.ab"
+import "abla/sys/linux"
+import "../models/session.ab"
 
 fun main: int {
     val first = mvcCreateSession("admin")

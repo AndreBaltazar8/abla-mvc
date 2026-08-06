@@ -1,7 +1,7 @@
-#import("abla/http")
-#import("action_core.ab")
-#import("forms.ab")
-#import("http.ab")
+import "abla/http"
+import "action_core.ab"
+import "forms.ab"
+import "http.ab"
 
 class MvcParsedInt(
     val value: int,

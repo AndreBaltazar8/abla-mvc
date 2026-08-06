@@ -1,5 +1,5 @@
-#import("abla/compiler")
-#import("client_identity.ab")
+import "abla/compiler"
+import "client_identity.ab"
 
 compile fun mvcBuildClientArtifact(): void {
     val functions = compiler.functionsAnnotated("client")

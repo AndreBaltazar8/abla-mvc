@@ -22,7 +22,7 @@ The current library provides:
 Import Abla MVC through Abla's GitHub package provider:
 
 ```abla
-#import(github("AndreBaltazar8/abla-mvc"))
+import github("AndreBaltazar8/abla-mvc")
 
 fun page(value: int): MvcHtml = $mvcview
     <main>

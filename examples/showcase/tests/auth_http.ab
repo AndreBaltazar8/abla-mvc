@@ -1,12 +1,12 @@
-#import("../../../src/abla-mvc.ab")
-#import("abla/sys/linux")
-#import("../models/counter.ab")
-#import("../models/session.ab")
-#import("../views/counter_view.ab")
-#import("../controllers/counter_controller.ab")
-#import("../controllers/client_counter_controller.ab")
-#import("../views/auth_view.ab")
-#import("../controllers/auth_controller.ab")
+import "../../../src/abla-mvc.ab"
+import "abla/sys/linux"
+import "../models/counter.ab"
+import "../models/session.ab"
+import "../views/counter_view.ab"
+import "../controllers/counter_controller.ab"
+import "../controllers/client_counter_controller.ab"
+import "../views/auth_view.ab"
+import "../controllers/auth_controller.ab"
 
 fun testHeader(response: HttpResponse, name: string): string {
     var value = ""

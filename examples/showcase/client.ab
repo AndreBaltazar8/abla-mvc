@@ -1,5 +1,5 @@
-#import("../../src/client_artifact.ab")
-#import("controllers/client_counter_controller.ab")
+import "../../src/client_artifact.ab"
+import "controllers/client_counter_controller.ab"
 
 #compiler.transform(mvcBuildClientArtifact)
 

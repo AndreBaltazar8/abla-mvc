@@ -1,5 +1,5 @@
-#import("abla/http")
-#import("html.ab")
+import "abla/http"
+import "html.ab"
 
 fun HttpRequest.queryParameter(name: string): string {
     var result = ""

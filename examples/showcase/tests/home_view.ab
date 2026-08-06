@@ -1,8 +1,8 @@
-#import("../../../src/abla-mvc.ab")
-#import("../models/counter.ab")
-#import("../views/counter_view.ab")
-#import("../controllers/counter_controller.ab")
-#import("../views/home_view.ab")
+import "../../../src/abla-mvc.ab"
+import "../models/counter.ab"
+import "../views/counter_view.ab"
+import "../controllers/counter_controller.ab"
+import "../views/home_view.ab"
 
 fun main: int {
     val rendered = homeView(HomeViewModel("query", 0)).render()

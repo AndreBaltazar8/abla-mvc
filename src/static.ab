@@ -1,5 +1,5 @@
-#import("abla/http")
-#import("http.ab")
+import "abla/http"
+import "http.ab"
 
 fun mvcStylesheetResponse(contents: string): HttpResponse = mvcPublicCache(
     HttpResponse(

@@ -1,6 +1,6 @@
-#import("abla/http")
-#import("abla/sys/linux")
-#import("../../src/static.ab")
+import "abla/http"
+import "abla/sys/linux"
+import "../../src/static.ab"
 
 fun showcaseStaticAsset(request: HttpRequest): HttpResponse {
     val name = request.parameter("name")

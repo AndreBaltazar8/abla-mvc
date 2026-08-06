@@ -1,4 +1,4 @@
-#import("../src/abla-mvc.ab")
+import "../src/abla-mvc.ab"
 
 fun incrementCounter(amount: int): MvcAction =
     replace("#counter", mvcHtmlText("$amount"))

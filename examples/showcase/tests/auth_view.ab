@@ -1,9 +1,9 @@
-#import("../../../src/abla-mvc.ab")
-#import("../models/counter.ab")
-#import("../views/counter_view.ab")
-#import("../controllers/counter_controller.ab")
-#import("../controllers/client_counter_controller.ab")
-#import("../views/auth_view.ab")
+import "../../../src/abla-mvc.ab"
+import "../models/counter.ab"
+import "../views/counter_view.ab"
+import "../controllers/counter_controller.ab"
+import "../controllers/client_counter_controller.ab"
+import "../views/auth_view.ab"
 
 fun main: int {
     val login = loginView(LoginViewModel("")).render()

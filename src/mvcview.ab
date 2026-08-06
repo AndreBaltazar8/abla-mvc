@@ -1,8 +1,8 @@
-#import("abla/compiler/parser")
-#import("abla/compiler")
-#import("html.ab")
-#import("action_core.ab")
-#import("client_identity.ab")
+import "abla/compiler/parser"
+import "abla/compiler"
+import "html.ab"
+import "action_core.ab"
+import "client_identity.ab"
 
 compile fun mvcActionHash(text: string, seed: int, factor: int): int {
     var value = seed

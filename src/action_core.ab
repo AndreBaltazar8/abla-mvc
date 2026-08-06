@@ -1,4 +1,4 @@
-#import("html.ab")
+import "html.ab"
 
 class MvcAction(
     val kind: int,
