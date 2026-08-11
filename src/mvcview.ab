@@ -429,9 +429,16 @@ compile fun mvcParseElement(cursor: ParserCursor): SyntaxExpression {
             children.append(mvcParseElement(cursor))
         } else if (parserRawAt(cursor, "{")) {
             parserRawExpect(cursor, "{")
+            var node = false
+            if (parserRawAt(cursor, "node ")) {
+                parserRawExpect(cursor, "node")
+                parserRawSkipWhitespace(cursor)
+                node = true
+            }
             val value = parserParseAblaExpression(cursor)
             parserRawExpect(cursor, "}")
-            children.append(mvcSyntaxUnaryCall("mvcHtmlDynamic", value))
+            if (node) children.append(value)
+            else children.append(mvcSyntaxUnaryCall("mvcHtmlDynamic", value))
         } else {
             val value = parserRawTakeUntil(cursor, "<{")
             if (value != "") {

@@ -186,6 +186,17 @@ fun field(): MvcHtml = $mvcview
     </custom-field>
 ```
 
+Ordinary interpolation is escaped text. A value already typed as `MvcHtml`
+can be composed as a structural child with `node`; a string cannot be used in
+that position, so this does not create a raw-HTML escape hatch:
+
+```abla
+fun badge(label: string): MvcHtml = $mvcview <strong>{label}</strong>
+
+fun card(label: string): MvcHtml = $mvcview
+    <article>{node badge(label)}<p>{label}</p></article>
+```
+
 ## Current limits
 
 This is still a small developer-preview surface:

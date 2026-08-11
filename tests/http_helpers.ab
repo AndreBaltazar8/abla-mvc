@@ -20,10 +20,17 @@ fun main: int {
     )
     val private = mvcNoStore(original)
     val immutable = mvcImmutableCache(httpText("asset"), 60)
+    val form = HttpRequest(
+        "POST", "/register", "", [],
+        "displayName=Andr%C3%A9&note=ol%C3%A1+%F0%9F%91%8B",
+        [], []
+    )
     if (responseHeader(private, "cache-control") != "no-store") return 1
     if (responseHeader(private, "X-Test") != "yes") return 2
     if (private.headers.size != 2) return 3
     if (responseHeader(immutable, "Cache-Control") !=
         "public, max-age=60, immutable") return 4
+    if (form.formParameter("displayName") != "André") return 5
+    if (form.formParameter("note") != "olá 👋") return 6
     0
 }

@@ -1,0 +1,12 @@
+import "../src/abla-mvc.ab"
+
+fun trustedCard(value: string): MvcHtml = $mvcview
+    <strong class="card">{value}</strong>
+
+fun main: int {
+    val unsafe = "<script>alert('x')</script>"
+    val view = $mvcview
+        <div>{node trustedCard(unsafe)}<span>{unsafe}</span></div>
+    if (view.render() ==
+        "<div><strong class=\"card\">&lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt;</strong><span>&lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt;</span></div>") 0 else 1
+}

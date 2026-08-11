@@ -1,0 +1,7 @@
+import "../src/abla-mvc.ab"
+
+fun main: int {
+    val unsafe = "plain text is not a trusted node"
+    val view = $mvcview <div>{node unsafe}</div>
+    if (view.render() == "") 0 else 1
+}
