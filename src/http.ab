@@ -1,31 +1,6 @@
 import "abla/http"
 import "html.ab"
 
-fun HttpRequest.queryParameter(name: string): string {
-    var result = ""
-    var pairBegin = 0
-    var separator = 0
-
-    while (separator <= this.query.size) {
-        if (separator == this.query.size || this.query[separator] == 38) {
-            var equals = pairBegin
-            while (equals < separator && this.query[equals] != 61) {
-                equals = equals + 1
-            }
-
-            if (equals < separator &&
-                this.query.slice(pairBegin, equals) == name) {
-                result = this.query.slice(equals + 1, separator)
-            }
-
-            pairBegin = separator + 1
-        }
-        separator = separator + 1
-    }
-
-    result
-}
-
 fun mvcHtmlResponse(view: MvcHtml, status: int = 200): HttpResponse =
     HttpResponse(
         status,
