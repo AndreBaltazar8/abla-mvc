@@ -110,6 +110,31 @@ opaque action identifier in the server allowlist. An explicitly annotated
 view emits metadata rather than inline JavaScript, and the runtime loads the
 client module once and falls back to the server action path where appropriate.
 
+The browser composition root can use the default artifact directly:
+
+```abla
+import "src/client_artifact.ab"
+import "controllers/client_counter_controller.ab"
+
+#mvcBuildClientArtifact()
+
+fun main: int = 0
+```
+
+For a custom build graph, call `mvcEmitClientModule` with named arguments. It
+selects the annotated functions by typed handle, lifts only their reachable
+code into an independent module, and asks Abla's Wasm package to emit it; the
+application does not generate an entry file or export adapters:
+
+```abla
+#mvcEmitClientModule(
+    name = "dashboard-client",
+    output = "build/dashboard/client.wasm",
+    fast = true,
+    cache = true
+)
+```
+
 Server actions may take no arguments or any number of `int` and `string`
 arguments:
 

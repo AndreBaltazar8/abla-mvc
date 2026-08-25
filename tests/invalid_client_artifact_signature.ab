@@ -1,0 +1,8 @@
+import "../src/client_artifact.ab"
+
+@client
+fun unsupportedClient(value: string): int = value.size
+
+#mvcBuildClientArtifact()
+
+fun main: int = 0

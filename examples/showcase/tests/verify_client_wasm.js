@@ -1,10 +1,27 @@
-const { readFileSync } = require("node:fs");
+import { readFileSync } from "node:fs";
 
-WebAssembly.instantiate(readFileSync(process.argv[2]), {}).then(
-  ({ instance }) => {
+const bytes = readFileSync(process.argv[2]);
+const module = new WebAssembly.Module(bytes);
+if (WebAssembly.Module.imports(module).length !== 0) {
+  throw new Error("generated MVC client module unexpectedly requires imports");
+}
+
+WebAssembly.instantiate(module, {}).then(
+  (instance) => {
     const names = Object.keys(instance.exports).filter((key) =>
       key.startsWith("abla_mvc_client_")
     );
+    const expected = [
+      "abla_mvc_client_859909852_504184209",
+      "abla_mvc_client_800460402_396973633",
+      "abla_mvc_client_989309915_167283300",
+    ];
+    if (
+      names.length !== expected.length ||
+      expected.some((name) => !names.includes(name))
+    ) {
+      throw new Error("generated MVC client export ABI changed");
+    }
     const reset = names.find((name) => instance.exports[name].length === 0);
     const increment = names.find((name) => instance.exports[name].length === 1);
     const add = names.find((name) => instance.exports[name].length === 2);

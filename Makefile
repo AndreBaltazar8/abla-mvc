@@ -31,6 +31,11 @@ test-library:
 			echo "expected string node interpolation to fail"; \
 			exit 1; \
 		fi
+	@cd $(ABLAC_DIR) && \
+		if $(COMPILER) build $(PROJECT_DIR)/tests/invalid_client_artifact_signature.ab -o $(BUILD_DIR)/invalid_client_artifact_signature --no-cache; then \
+			echo "expected invalid MVC client artifact signature to fail"; \
+			exit 1; \
+		fi
 
 test: test-library
 	$(MAKE) -C examples/showcase test
