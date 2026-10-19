@@ -30,7 +30,7 @@ test: client
 		$(COMPILER) build $(EXAMPLE_DIR)/tests/$$test_name.ab -o $(BUILD_DIR)/$$test_name --no-cache && \
 		cd $(EXAMPLE_DIR) && $(BUILD_DIR)/$$test_name || exit $$?; \
 	done
-	@node --disable-wasm-trap-handler tests/verify_client_wasm.js assets/abla-mvc-client.wasm
+	@node --disable-wasm-trap-handler tests/verify_client_wasm.mjs assets/abla-mvc-client.wasm
 
 clean:
 	@if [ -d "$(BUILD_DIR)" ]; then gio trash "$(BUILD_DIR)"; fi
