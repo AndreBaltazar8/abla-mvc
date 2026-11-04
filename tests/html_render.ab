@@ -64,8 +64,26 @@ fun htmlRenderRandomNode(depth: int): MvcHtml {
         attributes, children, htmlRenderRandom(4))
 }
 
+fun htmlRenderMarkupBoundaries(): bool {
+    var pattern = "é店\x00\xff<&>\"'"
+    while (pattern.size < 8192) pattern = pattern + pattern
+    for (length in [0, 1, 2, 3, 4, 7, 8, 31, 63, 64, 65,
+                   251, 252, 253, 254, 255, 256, 257, 4095, 4096, 4097]) {
+        val name = pattern.slice(1, length + 1)
+        // Force buffered traversal with three attributes, including raw names
+        // at the combined token's short/large threshold and unaligned bytes.
+        val attributes = [mvcHtmlAttribute(name, "<&>\"'"),
+            mvcHtmlBooleanAttribute(name), mvcHtmlAttribute("", "")]
+        for (closing in [-1, 0, 1, 2, 3]) {
+            if (!htmlRenderMatches(MvcHtml(1, name, "", attributes,
+                [mvcHtmlText("tail")], closing))) return false
+        }
+    }
+    true
+}
+
 fun main: int {
-    if (!htmlRenderedAtCompileTime || !htmlRenderSmallCases()) return 1
+    if (!htmlRenderedAtCompileTime || !htmlRenderSmallCases() || !htmlRenderMarkupBoundaries()) return 1
     for (index in 0 until 1000) {
         if (!htmlRenderMatches(htmlRenderRandomNode(4))) return 2
     }
