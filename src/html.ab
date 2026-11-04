@@ -55,6 +55,24 @@ private fun mvcHtmlEscapeEntity(byte: int): string =
     else if (byte == 34) "&quot;"
     else "&#39;"
 
+private fun mvcHtmlAppendEscaped(
+    var output: ByteBuffer,
+    value: string
+): void {
+    val size = value.size
+    var index = 0
+    var begin = 0
+    while (index < size) {
+        if (mvcHtmlNeedsEscape(value[index])) {
+            if (index > begin) output.appendText(value.slice(begin, index))
+            output.appendText(mvcHtmlEscapeEntity(value[index]))
+            begin = index + 1
+        }
+        index = index + 1
+    }
+    if (begin < size) output.appendText(value.slice(begin, size))
+}
+
 fun mvcEscapeHtml(value: string): string {
     val size = value.size
     var index = 0
@@ -78,28 +96,66 @@ fun mvcEscapeHtml(value: string): string {
     output.toText()
 }
 
-fun MvcHtml.render(): string {
-    var output = ""
-    if (this.kind == 2) output = mvcEscapeHtml(this.text)
-    if (this.kind == 1) {
-        output = "<${this.tag}"
-        var attributeIndex = 0
-        while (attributeIndex < this.attributes.size) {
-            val attribute = this.attributes[attributeIndex]
-            output = "$output ${attribute.name}"
-            if (!attribute.boolean) {
-                output = "$output=\"${mvcEscapeHtml(attribute.value)}\""
-            }
-            attributeIndex = attributeIndex + 1
-        }
-        if (this.closing == 2) output = "$output />"
-        else output = "$output>"
-        var childIndex = 0
-        while (this.closing == 1 && childIndex < this.children.size) {
-            output = "$output${this.children[childIndex].render()}"
-            childIndex = childIndex + 1
-        }
-        if (this.closing == 1) output = "$output</${this.tag}>"
+private fun mvcHtmlRenderInto(view: MvcHtml, var output: ByteBuffer): void {
+    if (view.kind == 2) {
+        mvcHtmlAppendEscaped(output, view.text)
+        return
     }
+    if (view.kind != 1) return
+    output.appendText("<")
+    output.appendText(view.tag)
+    for (attribute in view.attributes) {
+        output.appendText(" ")
+        output.appendText(attribute.name)
+        if (!attribute.boolean) {
+            output.appendText("=\"")
+            mvcHtmlAppendEscaped(output, attribute.value)
+            output.appendText("\"")
+        }
+    }
+    if (view.closing == 2) output.appendText(" />")
+    else output.appendText(">")
+    if (view.closing == 1) {
+        for (child in view.children) mvcHtmlRenderInto(child, output)
+        output.appendText("</")
+        output.appendText(view.tag)
+        output.appendText(">")
+    }
+}
+
+private fun mvcHtmlRenderBuffered(view: MvcHtml): string {
+    val output = byteBuffer()
+    mvcHtmlRenderInto(view, output)
+    output.toText()
+}
+
+fun MvcHtml.render(): string {
+    if (this.kind != 1) {
+        if (this.kind == 2) return mvcEscapeHtml(this.text)
+        return ""
+    }
+    // A leaf with few pieces is cheaper as direct templates. Branched trees
+    // share one buffer, without creating a rendered string for each child.
+    if (this.attributes.size + this.children.size > 2) return mvcHtmlRenderBuffered(this)
+    var output = ""
+    output = "<${this.tag}"
+    var attributeIndex = 0
+    while (attributeIndex < this.attributes.size) {
+        val attribute = this.attributes[attributeIndex]
+        output = "$output ${attribute.name}"
+        if (!attribute.boolean) {
+            output = "$output=\"${mvcEscapeHtml(attribute.value)}\""
+        }
+        attributeIndex = attributeIndex + 1
+    }
+    if (this.closing == 2) output = "$output />"
+    else output = "$output>"
+    var childIndex = 0
+    while (this.closing == 1 && childIndex < this.children.size) {
+        output = "$output${this.children[childIndex].render()}"
+        childIndex = childIndex + 1
+    }
+    if (this.closing == 1) output = "$output</${this.tag}>"
+
     output
 }
