@@ -1,3 +1,5 @@
+import "abla/bytes"
+
 class MvcHtmlAttribute(
     val name: string,
     val value: string,
@@ -43,27 +45,37 @@ fun mvcHtmlText(value: string): MvcHtml = MvcHtml(2, "", value, [], [], 0)
 
 fun mvcHtmlDynamic(value: any): MvcHtml = mvcHtmlText("$value")
 
+private fun mvcHtmlNeedsEscape(byte: int): bool =
+    byte == 38 || byte == 60 || byte == 62 || byte == 34 || byte == 39
+
+private fun mvcHtmlEscapeEntity(byte: int): string =
+    if (byte == 38) "&amp;"
+    else if (byte == 60) "&lt;"
+    else if (byte == 62) "&gt;"
+    else if (byte == 34) "&quot;"
+    else "&#39;"
+
 fun mvcEscapeHtml(value: string): string {
-    var output = ""
+    val size = value.size
     var index = 0
-    while (index < value.size) {
-        val byte = value[index]
-        if (byte == 38) {
-            output = "${output}&amp;"
-        } else if (byte == 60) {
-            output = "${output}&lt;"
-        } else if (byte == 62) {
-            output = "${output}&gt;"
-        } else if (byte == 34) {
-            output = "${output}&quot;"
-        } else if (byte == 39) {
-            output = "${output}&#39;"
-        } else {
-            output = "$output${value.slice(index, index + 1)}"
+    while (index < size && !mvcHtmlNeedsEscape(value[index])) index += 1
+    // Ordinary text, including the empty string, needs no allocation or copy.
+    if (index == size) return value
+    if (size == 1) return mvcHtmlEscapeEntity(value[index])
+
+    val output = byteBuffer()
+    var begin = 0
+    // Continue at the first hit: do not rescan the already checked prefix.
+    while (index < size) {
+        if (mvcHtmlNeedsEscape(value[index])) {
+            if (index > begin) output.appendText(value.slice(begin, index))
+            output.appendText(mvcHtmlEscapeEntity(value[index]))
+            begin = index + 1
         }
         index = index + 1
     }
-    output
+    if (begin < size) output.appendText(value.slice(begin, size))
+    output.toText()
 }
 
 fun MvcHtml.render(): string {

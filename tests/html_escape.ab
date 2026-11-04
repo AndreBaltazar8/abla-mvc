@@ -1,8 +1,73 @@
 import "../src/abla-mvc.ab"
 
+// The original byte-at-a-time implementation is the differential oracle.
+fun htmlEscapeReference(value: string): string {
+    var output = ""
+    var index = 0
+    while (index < value.size) {
+        val byte = value[index]
+        if (byte == 38) output = "${output}&amp;"
+        else if (byte == 60) output = "${output}&lt;"
+        else if (byte == 62) output = "${output}&gt;"
+        else if (byte == 34) output = "${output}&quot;"
+        else if (byte == 39) output = "${output}&#39;"
+        else output = "$output${value.slice(index, index + 1)}"
+        index += 1
+    }
+    output
+}
+
+fun htmlEscapeMatches(value: string): bool =
+    mvcEscapeHtml(value) == htmlEscapeReference(value)
+
+fun htmlEscapeSmallCases(): bool {
+    for (value in ["", "plain", "&", "<", ">", "\"", "'", "&<>'\"",
+                  "&amp;already escaped", "\x00", "André <店> & \"🙂\"",
+                  "\xff\xc0\x80\xed\xa0\x80&\x00tail"]) {
+        if (!htmlEscapeMatches(value)) return false
+    }
+    true
+}
+
+val htmlEscapedAtCompileTime = #htmlEscapeSmallCases()
+
+fun htmlEscapeDifferential(): bool {
+    if (!htmlEscapeSmallCases()) return false
+    val allBytes = byteBuffer()
+    for (byte in 0 until 256) allBytes.appendByteValue(byte)
+    if (!htmlEscapeMatches(allBytes.toText())) return false
+    for (size in [2, 63, 64, 65, 255, 256, 257, 4095, 4096, 4097, 16384, 65536]) {
+        var plain = "abcdef0123456789"
+        var special = "&<>'\""
+        while (plain.size < size) plain = plain + plain
+        while (special.size < size) special = special + special
+        plain = plain.slice(0, size)
+        if (!htmlEscapeMatches(plain) ||
+            !htmlEscapeMatches("&$plain") ||
+            !htmlEscapeMatches("$plain\"") ||
+            !htmlEscapeMatches("${plain.slice(0, size / 2)}<${plain.slice(size / 2, size)}") ||
+            !htmlEscapeMatches(special.slice(0, size))) return false
+    }
+    var seed = 1729
+    for (caseIndex in 0 until 2000) {
+        seed = (seed * 1103515245 + 12345) % 2147483648
+        val size = seed % 513
+        val value = byteBuffer()
+        for (index in 0 until size) {
+            seed = (seed * 1103515245 + 12345) % 2147483648
+            val byte = if (caseIndex % 3 == 0 && index % 4 == 0)
+                "&<>'\""[(seed / 65536) % 5]
+                else (seed / 65536) % 256
+            value.appendByteValue(byte)
+        }
+        if (!htmlEscapeMatches(value.toText())) return false
+    }
+    true
+}
+
 fun main: int {
     val unsafe = "<script>\"Abla\" & 'MVC'</script>"
     val view = $mvcview <p title={unsafe}>{unsafe}</p>
     val expected = "<p title=\"&lt;script&gt;&quot;Abla&quot; &amp; &#39;MVC&#39;&lt;/script&gt;\">&lt;script&gt;&quot;Abla&quot; &amp; &#39;MVC&#39;&lt;/script&gt;</p>"
-    if (view.render() == expected) 0 else 1
+    if (view.render() == expected && htmlEscapedAtCompileTime && htmlEscapeDifferential()) 0 else 1
 }
