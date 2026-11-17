@@ -11,6 +11,9 @@ import "views/home_view.ab"
 import "views/auth_view.ab"
 import "controllers/home_controller.ab"
 import "controllers/auth_controller.ab"
+import "abla/http"
+import "../../src/action_core.ab"
+import "../../src/actions.ab"
 
 fun applicationHealth(request: HttpRequest): HttpResponse = httpText("ok")
 

@@ -1,3 +1,8 @@
+import "../models/counter.ab"
+import "abla/http"
+import "../views/home_view.ab"
+import "../../../src/http.ab"
+
 fun homeIndex(request: HttpRequest): HttpResponse {
     val query = request.queryParameter("query")
     val queryMessage = if (query == "")

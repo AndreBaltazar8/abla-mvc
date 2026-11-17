@@ -1,4 +1,8 @@
 import "../src/abla-mvc.ab"
+import "abla/http"
+import "../src/action_core.ab"
+import "../src/actions.ab"
+import "../src/html.ab"
 
 fun greet(name: string): MvcAction =
     replace("#result", mvcHtmlText("Hello, $name"))

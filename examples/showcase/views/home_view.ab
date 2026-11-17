@@ -1,3 +1,6 @@
+import "../controllers/counter_controller.ab"
+import "../../../src/html.ab"
+
 class HomeViewModel(
     val queryMessage: string,
     val counter: int

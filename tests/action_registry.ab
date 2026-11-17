@@ -1,4 +1,7 @@
 import "../src/abla-mvc.ab"
+import "abla/http"
+import "../src/actions.ab"
+import "../src/action_core.ab"
 
 fun testAction(amount: int): MvcAction {
     val view = $mvcview <span id="counter">{amount + 1}</span>

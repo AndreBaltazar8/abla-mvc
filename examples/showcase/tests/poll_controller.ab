@@ -1,5 +1,6 @@
 import "../../../src/abla-mvc.ab"
 import "../controllers/poll_controller.ab"
+import "abla/http"
 
 fun main: int {
     val request = httpGet(

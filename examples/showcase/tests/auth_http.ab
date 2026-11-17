@@ -7,6 +7,7 @@ import "../controllers/counter_controller.ab"
 import "../controllers/client_counter_controller.ab"
 import "../views/auth_view.ab"
 import "../controllers/auth_controller.ab"
+import "abla/http"
 
 fun testHeader(response: HttpResponse, name: string): string {
     var value = ""

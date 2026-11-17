@@ -1,3 +1,7 @@
+import "../../../src/action_core.ab"
+import "../models/counter.ab"
+import "../views/counter_view.ab"
+
 fun incrementCounter(amount: int): MvcAction {
     val value = counterIncrement(amount)
     replace("#counter", counterValueView(value))
