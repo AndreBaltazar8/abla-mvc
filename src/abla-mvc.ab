@@ -1,5 +1,4 @@
 // Public composition root for the Abla MVC library.
-import "abla/http"
 export import "html.ab"
 export import "action_core.ab"
 export import "http.ab"
