@@ -1,5 +1,6 @@
 import "../controllers/counter_controller.ab"
 import "../../../src/html.ab"
+import "../../../src/mvcview.ab"
 
 class HomeViewModel(
     val queryMessage: string,

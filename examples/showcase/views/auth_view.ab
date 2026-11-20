@@ -1,6 +1,7 @@
 import "../controllers/counter_controller.ab"
 import "../controllers/client_counter_controller.ab"
 import "../../../src/html.ab"
+import "../../../src/mvcview.ab"
 
 class LoginViewModel(
     val error: string

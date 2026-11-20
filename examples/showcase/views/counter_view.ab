@@ -1,4 +1,5 @@
 import "../../../src/html.ab"
+import "../../../src/mvcview.ab"
 
 fun counterValueView(value: int): MvcHtml = $mvcview
     <span id="counter">{value}</span>
