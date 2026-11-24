@@ -1,6 +1,5 @@
-import "abla/unsafe/memory"
-import "abla/sys/linux"
-import "abla/unsafe/memory/raw"
+import "abla/sys/linux/process"
+import "abla/sys/linux/random"
 import "abla/http"
 
 class MvcAuthentication(
@@ -25,43 +24,18 @@ val mvcSessionStore: array<MvcSession> = []
 
 fun mvcMaximumSessions(): int = 64
 
-fun mvcUnixSeconds(): int {
-    val clock = nativeByteBuffer(16)
-    clock.storeI64(0, 0)
-    clock.storeI64(8, 0)
-    val measured = linuxSyscall2(
-        228,
-        0,
-        nativePointerAddress(clock.address)
-    )
-    var result = 0
-    if (measured == 0) result = clock.loadI64(0)
-    clock.close()
-    result
-}
+fun mvcUnixSeconds(): int = linuxRealtimeNanoseconds() / 1000000000
 
 fun mvcSecureToken(): MvcSessionCreation {
-    val random = nativeByteBuffer(32)
-    var filled = 0
-    var attempts = 0
-    var available = true
-    while (filled < 32 && available && attempts < 8) {
-        val measured = linuxSyscall3(
-            318,
-            nativePointerAddress(random.pointerAt(filled)),
-            32 - filled,
-            0
-        )
-        if (measured > 0) filled = filled + measured
-        if (measured <= 0 && measured != -4) available = false
-        attempts = attempts + 1
-    }
+    // 32 bytes from the system's entropy (retried when interrupted); a failure is no token
+    val random = secureRandomBytes(32)
+    val filled = if (random.succeeded) random.bytes.size else 0
 
     var token = ""
     val digits = "0123456789abcdef"
     var index = 0
     while (index < filled) {
-        val byte = random.load(index)
+        val byte = random.bytes[index]
         token = "$token${digits.slice(byte / 16, byte / 16 + 1)}"
         token = "$token${digits.slice(
             byte - byte / 16 * 16,
@@ -69,7 +43,6 @@ fun mvcSecureToken(): MvcSessionCreation {
         )}"
         index = index + 1
     }
-    random.close()
     MvcSessionCreation(filled == 32, token)
 }
 
