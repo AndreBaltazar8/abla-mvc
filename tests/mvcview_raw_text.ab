@@ -1,0 +1,9 @@
+import "../src/abla-mvc.ab"
+
+// The literal body of a <script> or <style> in a template is code, written as it is: a `<`, `&` or quote in it is not HTML-escaped (that
+// changed the code), and only the element's own closing tag ends it. Text elsewhere is escaped as before.
+fun main: int {
+    val view = $mvcview <div><script>if (a < b && c > "0") start('x')</script><style>p > a::after</style><p>a & b</p></div>
+    val expected = "<div><script>if (a < b && c > \"0\") start('x')</script><style>p > a::after</style><p>a &amp; b</p></div>"
+    if (view.render() == expected) 0 else 1
+}

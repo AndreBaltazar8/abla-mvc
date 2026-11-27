@@ -6,7 +6,7 @@ class MvcHtmlAttribute(
     val boolean: bool
 )
 
-// Kinds: 1 element, 2 escaped text.
+// Kinds: 1 element, 2 escaped text, 3 raw text (the literal body of a <script> or <style> in a template: source text, written as it is).
 class MvcHtml(
     val kind: int,
     val tag: string,
@@ -42,6 +42,10 @@ fun mvcHtmlSelfClosingElement(
 ): MvcHtml = MvcHtml(1, tag, "", attributes, [], 2)
 
 fun mvcHtmlText(value: string): MvcHtml = MvcHtml(2, "", value, [], [], 0)
+
+// The literal text of a <script> or <style> element in a $mvcview template, written unescaped (HTML escaping would change the code; the
+// template parser refuses holes there, since escaping cannot make a value safe as script or style).
+fun mvcHtmlRawText(value: string): MvcHtml = MvcHtml(3, "", value, [], [], 0)
 
 fun mvcHtmlDynamic(value: any): MvcHtml = mvcHtmlText("$value")
 
@@ -112,6 +116,10 @@ private fun mvcHtmlRenderInto(view: MvcHtml, var output: ByteBuffer): void {
         mvcHtmlAppendEscaped(output, view.text)
         return
     }
+    if (view.kind == 3) {
+        output.appendText(view.text)
+        return
+    }
     if (view.kind != 1) return
     mvcHtmlAppendMarkup(output, view.tag, 1)
     for (attribute in view.attributes) {
@@ -138,6 +146,7 @@ private fun mvcHtmlRenderBuffered(view: MvcHtml): string {
 fun MvcHtml.render(): string {
     if (this.kind != 1) {
         if (this.kind == 2) return mvcEscapeHtml(this.text)
+        if (this.kind == 3) return this.text
         return ""
     }
     // A leaf with few pieces is cheaper as direct templates. Branched trees

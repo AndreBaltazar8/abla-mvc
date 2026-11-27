@@ -5,6 +5,8 @@ import "../src/html.ab"
 fun htmlRenderReference(view: MvcHtml): string {
     var output = ""
     if (view.kind == 2) output = mvcEscapeHtml(view.text)
+    // Kind 3: the raw literal body of a <script> or <style>.
+    if (view.kind == 3) output = view.text
     if (view.kind == 1) {
         output = "<${view.tag}"
         for (attribute in view.attributes) {

@@ -1,0 +1,9 @@
+import "../src/abla-mvc.ab"
+
+// An Abla expression inside <script> must not compile: HTML escaping cannot make a value safe as script (`${...}` in a template string, or
+// a bare expression, would run).
+fun main: int {
+    val name = "`; alert(1); `"
+    val view = $mvcview <div><script>{name}</script></div>
+    if (view.render() == "") 0 else 1
+}

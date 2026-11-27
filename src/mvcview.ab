@@ -417,6 +417,28 @@ compile fun mvcParseElement(cursor: ParserCursor): SyntaxExpression {
 
     val children: array<SyntaxExpression> = []
     var closed = false
+    // <script> and <style> hold code, not HTML: their literal text is written as it is (mvcHtmlRawText; a `<` is part of it, only the
+    // element's own closing tag ends it), and a {hole} is refused, since HTML escaping cannot make a value safe as script or style.
+    if (tag == "script" || tag == "style") {
+        var body = ""
+        while (!closed) {
+            if (parserRawEnd(cursor)) {
+                closed = true
+                parserFail(cursor, "unterminated MVC view element <$tag>")
+            } else if (parserRawAt(cursor, "</$tag")) {
+                closed = true
+            } else if (parserRawAt(cursor, "{")) {
+                closed = true
+                parserFail(cursor, "an Abla expression in <$tag> is not allowed: HTML escaping cannot make a value safe as $tag (serve the code from a file, and pass values in data- attributes)")
+            } else if (parserRawAt(cursor, "<")) {
+                parserRawExpect(cursor, "<")
+                body = "$body<"
+            } else {
+                body = body + parserRawTakeUntil(cursor, "<{")
+            }
+        }
+        if (body != "") children.append(mvcSyntaxUnaryCall("mvcHtmlRawText", syntaxString(body)))
+    }
     while (!closed) {
         if (parserRawEnd(cursor)) {
             closed = true
