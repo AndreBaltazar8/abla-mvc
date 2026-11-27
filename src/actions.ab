@@ -17,7 +17,9 @@ fun mvcParseInt(text: string): MvcParsedInt {
         if (byte < 48 || byte > 57) {
             valid = false
         } else if (valid) {
-            value = value * 10 + byte - 48
+            // A value past the largest int is not a number an action can take (it used to wrap, to a negative id for one).
+            if (value > (9223372036854775807 - (byte - 48)) / 10) valid = false
+            else value = value * 10 + byte - 48
         }
         index = index + 1
     }

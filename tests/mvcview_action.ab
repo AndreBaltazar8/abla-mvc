@@ -27,6 +27,12 @@ fun main: int {
         [actionIdentifier]
     )
     val response = actions.dispatch(routed)
+    // An integer argument past the largest int is refused, not wrapped (to a negative one); the largest is taken.
+    val tooLarge = actions.dispatch(HttpRequest("POST", "/__abla/action/$actionIdentifier", "argument=99999999999999999999", [], "", ["name"],
+        [actionIdentifier]))
+    val largest = actions.dispatch(HttpRequest("POST", "/__abla/action/$actionIdentifier", "argument=9223372036854775807", [], "", ["name"],
+        [actionIdentifier]))
+    if (tooLarge.status != 400 || largest.status != 200 || largest.body != "9223372036854775807") return 2
     if (registeredBeforeRender &&
         actionIdentifier.slice(0, 11) == "abla_mvc_a_" &&
         rendered ==
