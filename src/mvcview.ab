@@ -311,7 +311,9 @@ compile fun mvcParseActionAttributes(
 }
 
 compile fun mvcParseAttribute(
-    cursor: ParserCursor
+    cursor: ParserCursor,
+    // the element's tag, lowercase (an SVG animation's values are URL lists)
+    tag: string = ""
 ): array<SyntaxExpression> {
     val attributes: array<SyntaxExpression> = []
     // HTML attribute names may contain hyphens and colons. Read until the
@@ -365,15 +367,23 @@ compile fun mvcParseAttribute(
             parserRawExpect(cursor, "{")
             val value = parserParseAblaExpression(cursor)
             parserRawExpect(cursor, "}")
-            // An event handler runs its value as script: a hole there compiles only as mvcTrusted(...). A URL attribute's hole is
-            // checked when built (mvcHtmlUrlAttributeValue): javascript:, vbscript: and data: are replaced.
+            // An event handler runs its value as script, and an iframe's srcdoc is a document whose scripts run: a hole there compiles
+            // only as mvcTrusted(...). A URL attribute's hole is checked when built (mvcHtmlUrlAttributeValue): javascript:, vbscript:
+            // and data: are replaced; so is each ;-item of an SVG animation's values, to, from or by (they set the animated attribute).
             val key = outputName.lowercase()
-            if (mvcHtmlEventAttributeName(key) && !(syntaxText(value) == "mvcTrusted" && syntaxChildCount(value) == 1)) {
+            val wrapped = syntaxText(value) == "mvcTrusted" && syntaxChildCount(value) == 1
+            if (mvcHtmlEventAttributeName(key) && !wrapped) {
                 parserFail(cursor, "an Abla expression cannot fill the event handler attribute $sourceName: its value runs as script (for a handler the program wrote, use mvcTrusted(code))")
+            }
+            if (key == "srcdoc" && !wrapped) {
+                parserFail(cursor, "an Abla expression cannot fill the attribute $sourceName: its value is a document whose scripts run (for one the program wrote, use mvcTrusted(markup))")
             }
             if (mvcHtmlUrlAttributeName(key)) {
                 val urlArguments: array<SyntaxExpression> = [syntaxString(outputName), value]
                 attributes.append(syntaxCall("mvcHtmlUrlAttributeValue", urlArguments))
+            } else if (mvcHtmlAnimationValue(tag, key)) {
+                val listArguments: array<SyntaxExpression> = [syntaxString(outputName), value]
+                attributes.append(syntaxCall("mvcHtmlUrlListAttributeValue", listArguments))
             } else attributes.append(mvcSyntaxAttribute(outputName, value))
         } else {
             parserFail(
@@ -394,7 +404,7 @@ compile fun mvcParseElement(cursor: ParserCursor): SyntaxExpression {
     val attributes: array<SyntaxExpression> = []
     parserRawSkipWhitespace(cursor)
     while (!parserRawAt(cursor, ">") && !parserRawAt(cursor, "/>")) {
-        val parsedAttributes = mvcParseAttribute(cursor)
+        val parsedAttributes = mvcParseAttribute(cursor, tag.lowercase())
         var parsedAttribute = 0
         while (parsedAttribute < parsedAttributes.size) {
             attributes.append(parsedAttributes[parsedAttribute])

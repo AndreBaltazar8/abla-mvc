@@ -46,6 +46,35 @@ fun mvcHtmlUrlAttributeName(name: string): bool =
     name == "classid" || name == "data" || name == "manifest" || name == "icon" || name == "ping" || name == "lowsrc" ||
     name == "dynsrc" || name == "archive" || name == "profile"
 
+/// Whether a lowercase attribute of a lowercase SVG animation element (animate, set, animateMotion, animateTransform) sets the animated
+/// attribute's value: values (a ;-list), to, from and by. Its target can be an href, so each item is held to the URL check.
+fun mvcHtmlAnimationValue(tag: string, name: string): bool =
+    (tag == "animate" || tag == "set" || tag == "animatemotion" || tag == "animatetransform") &&
+    (name == "values" || name == "to" || name == "from" || name == "by")
+
+/// `value`, a ;-separated list, with each item as mvcHtmlSafeUrl writes it.
+fun mvcHtmlSafeUrlList(value: string): string {
+    var result = ""
+    var begin = 0
+    var index = 0
+    while (index <= value.size) {
+        if (index == value.size || value[index] == 59) {
+            val item = mvcHtmlSafeUrl(value.slice(begin, index))
+            result = if (begin == 0) item else "$result;$item"
+            begin = index + 1
+        }
+        index = index + 1
+    }
+    result
+}
+
+// A $mvcview hole in an SVG animation's values, to, from or by: each ;-item as mvcHtmlSafeUrl writes it.
+fun mvcHtmlUrlListAttributeValue(name: string, value: any): MvcHtmlAttribute =
+    MvcHtmlAttribute(name, mvcHtmlSafeUrlList("$value"), false)
+
+fun mvcHtmlUrlListAttributeValue(name: string, value: MvcTrusted): MvcHtmlAttribute =
+    MvcHtmlAttribute(name, value.value, false)
+
 /// Whether a lowercase attribute name is an event handler (on...), whose value runs as script.
 fun mvcHtmlEventAttributeName(name: string): bool = name.size > 2 && name[0] == 111 && name[1] == 110
 

@@ -1,0 +1,8 @@
+import "../src/abla-mvc.ab"
+
+// An Abla expression in an iframe's srcdoc must not compile: it is a document whose scripts run (escaping does not change that).
+fun main: int {
+    val page = "<script>alert(1)</script>"
+    val view = $mvcview <div><iframe srcdoc={page}></iframe></div>
+    if (view.render() == "") 0 else 1
+}

@@ -227,12 +227,17 @@ An expression in a URL attribute (`href`, `src`, `action`, `formaction`,
 scheme is `javascript:`, `vbscript:` or `data:` is written as
 `about:invalid#abla-unsafe-url`. The scheme is read as a browser reads it (any
 case, whitespace and control characters dropped, character references decoded),
-so `JaVaScRiPt:`, `java\tscript:` and `&#106;avascript:` are refused too. An
-expression cannot fill an event handler attribute (`on...`, other than the
-`onclick` action syntax): that is a compile error. Quoted values are not
-checked. For a value the program wrote or fully checked, `mvcTrusted(value)`
-in the hole skips both checks; it is the only way past them, so a search for
-`mvcTrusted` finds every exception:
+so `JaVaScRiPt:`, `java\tscript:` and `&#106;avascript:` are refused too, as is
+each `;`-item of `values`, `to`, `from` and `by` on an SVG `animate`, `set`,
+`animateMotion` or `animateTransform` (they set the animated attribute, which can
+be an `href`). An expression cannot fill an event handler attribute (`on...`,
+other than the `onclick` action syntax) or an iframe's `srcdoc` (a document
+whose scripts run): that is a compile error. Quoted values are not checked. For
+a value the program wrote or fully checked, `mvcTrusted(value)` in the hole skips
+these checks (it is an ordinary function, not a `trusted` one). In a template it
+is the only way past them; outside templates, an `MvcHtml` tree built directly
+(`MvcHtmlAttribute`, `mvcHtmlAttribute`, `mvcHtmlRawText`) is not checked, so an
+audit searches for those names too:
 
 ```abla
 fun avatar(url: string): MvcHtml = $mvcview <img src={url} alt="">

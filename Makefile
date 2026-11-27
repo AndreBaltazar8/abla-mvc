@@ -42,6 +42,11 @@ test-library:
 			exit 1; \
 		fi
 	@cd $(ABLAC_DIR) && \
+		if $(COMPILER) build $(PROJECT_DIR)/tests/invalid_mvcview_srcdoc_hole.ab -o $(BUILD_DIR)/invalid_mvcview_srcdoc_hole --no-cache; then \
+			echo "expected an expression in srcdoc to fail"; \
+			exit 1; \
+		fi
+	@cd $(ABLAC_DIR) && \
 		if $(COMPILER) build $(PROJECT_DIR)/tests/invalid_client_artifact_signature.ab -o $(BUILD_DIR)/invalid_client_artifact_signature --no-cache; then \
 			echo "expected invalid MVC client artifact signature to fail"; \
 			exit 1; \

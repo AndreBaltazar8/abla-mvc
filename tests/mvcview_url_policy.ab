@@ -27,5 +27,15 @@ fun main: int {
     if (pixel.render() != "<img src=\"data:image/png;base64,AAAA\" onload=\"ready()\">") return 7
     val authored = $mvcview <body onunload="stop()">x</body>
     if (authored.render() != "<body onunload=\"stop()\">x</body>") return 8
+    // An SVG animation's values, to, from and by set the animated attribute (an href, here): each ;-item is checked.
+    val js = "#a; JaVa\tScript:alert(1);/b"
+    val animated = $mvcview <svg><a href="#"><animate attributeName="href" values={js} to={js} from={js} by={js} /><set attributeName="href" to={js} /><animateMotion values={js} /><animateTransform from={js} /></a></svg>
+    val safeList = "#a;about:invalid#abla-unsafe-url;/b"
+    if (animated.render() != "<svg><a href=\"#\"><animate attributeName=\"href\" values=\"$safeList\" to=\"$safeList\" from=\"$safeList\" by=\"$safeList\" /><set attributeName=\"href\" to=\"$safeList\" /><animateMotion values=\"$safeList\" /><animateTransform from=\"$safeList\" /></a></svg>") return 9
+    val numbers = "0;1;0.5"
+    val fade = $mvcview <svg><animate attributeName="opacity" values={numbers} /></svg>
+    if (fade.render() != "<svg><animate attributeName=\"opacity\" values=\"0;1;0.5\" /></svg>") return 10
+    val framed = $mvcview <iframe srcdoc={mvcTrusted("<p>hi</p>")}></iframe>
+    if (framed.render() != "<iframe srcdoc=\"&lt;p&gt;hi&lt;/p&gt;\"></iframe>") return 11
     0
 }
