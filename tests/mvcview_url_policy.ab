@@ -1,0 +1,31 @@
+import "../src/abla-mvc.ab"
+import "abla/text"
+
+// A hole in a URL attribute refuses javascript:, vbscript: and data:, in any case, with whitespace or control characters anywhere and
+// behind character references; other URLs are kept, authored values are not checked, and mvcTrusted is the escape hatch.
+fun main: int {
+    val unsafe = ["javascript:alert(1)", "JaVaScRiPt:alert(1)", "java\tscript:alert(1)", "java\nscript:x", " \u{1}javascript:x",
+        "&#106;avascript:x", "&#x6A;avascript:x", "&#106avascript:x", "javascript&colon;x", "jav&Tab;ascript:x", "vbscript:msgbox(1)",
+        "VBScript:x", "data:text/html,<script>alert(1)</script>", "DATA:image/svg+xml,x", "j\u{0}avascript:x"]
+    for (url in unsafe) {
+        val link = $mvcview <a href={url}>x</a>
+        if (link.render() != "<a href=\"about:invalid#abla-unsafe-url\">x</a>") return 2
+        val form = $mvcview <form action={url}><button formaction={url} SRC={url}>x</button></form>
+        if (form.render() != "<form action=\"about:invalid#abla-unsafe-url\"><button formaction=\"about:invalid#abla-unsafe-url\" SRC=\"about:invalid#abla-unsafe-url\">x</button></form>") return 3
+        val vector = $mvcview <svg><a xlink:href={url}>x</a></svg>
+        if (!vector.render().contains("about:invalid#abla-unsafe-url")) return 4
+    }
+    val safe = ["/path?q=1", "https://example.com/a:b", "mailto:a@example.com", "relative/javascript:x", "?javascript:x", "#data:x",
+        "javascripts:x", "datas:x", ""]
+    for (url in safe) {
+        val link = $mvcview <a href={url}>x</a>
+        if (link.render() != "<a href=\"${mvcEscapeHtml(url)}\">x</a>") return 5
+    }
+    val titled = $mvcview <a title={"javascript:x"} href="javascript:void(0)">x</a>
+    if (titled.render() != "<a title=\"javascript:x\" href=\"javascript:void(0)\">x</a>") return 6
+    val pixel = $mvcview <img src={mvcTrusted("data:image/png;base64,AAAA")} onload={mvcTrusted("ready()")}>
+    if (pixel.render() != "<img src=\"data:image/png;base64,AAAA\" onload=\"ready()\">") return 7
+    val authored = $mvcview <body onunload="stop()">x</body>
+    if (authored.render() != "<body onunload=\"stop()\">x</body>") return 8
+    0
+}

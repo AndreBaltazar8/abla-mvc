@@ -222,6 +222,23 @@ fun card(label: string): MvcHtml = $mvcview
     <article>{node badge(label)}<p>{label}</p></article>
 ```
 
+An expression in a URL attribute (`href`, `src`, `action`, `formaction`,
+`poster`, `cite`, `xlink:href` and the like) is checked as well: a value whose
+scheme is `javascript:`, `vbscript:` or `data:` is written as
+`about:invalid#abla-unsafe-url`. The scheme is read as a browser reads it (any
+case, whitespace and control characters dropped, character references decoded),
+so `JaVaScRiPt:`, `java\tscript:` and `&#106;avascript:` are refused too. An
+expression cannot fill an event handler attribute (`on...`, other than the
+`onclick` action syntax): that is a compile error. Quoted values are not
+checked. For a value the program wrote or fully checked, `mvcTrusted(value)`
+in the hole skips both checks; it is the only way past them, so a search for
+`mvcTrusted` finds every exception:
+
+```abla
+fun avatar(url: string): MvcHtml = $mvcview <img src={url} alt="">
+fun pixel(): MvcHtml = $mvcview <img src={mvcTrusted("data:image/gif;base64,R0lGODlhAQABAAAAACw=")} alt="">
+```
+
 ## Current limits
 
 This is still a small developer-preview surface:

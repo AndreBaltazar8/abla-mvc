@@ -1,0 +1,8 @@
+import "../src/abla-mvc.ab"
+
+// An Abla expression in an event handler attribute must not compile: its value runs as script. (onclick is the MVC action syntax.)
+fun main: int {
+    val code = "alert(1)"
+    val view = $mvcview <div onmouseover={code}>x</div>
+    if (view.render() == "") 0 else 1
+}

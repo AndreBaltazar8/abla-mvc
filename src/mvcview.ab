@@ -1,6 +1,8 @@
 import "abla/compiler/parser"
 import "abla/compiler"
 import "client_identity.ab"
+import "html.ab"
+import "abla/text"
 
 compile fun mvcActionHash(text: string, seed: int, factor: int): int {
     var value = seed
@@ -363,7 +365,16 @@ compile fun mvcParseAttribute(
             parserRawExpect(cursor, "{")
             val value = parserParseAblaExpression(cursor)
             parserRawExpect(cursor, "}")
-            attributes.append(mvcSyntaxAttribute(outputName, value))
+            // An event handler runs its value as script: a hole there compiles only as mvcTrusted(...). A URL attribute's hole is
+            // checked when built (mvcHtmlUrlAttributeValue): javascript:, vbscript: and data: are replaced.
+            val key = outputName.lowercase()
+            if (mvcHtmlEventAttributeName(key) && !(syntaxText(value) == "mvcTrusted" && syntaxChildCount(value) == 1)) {
+                parserFail(cursor, "an Abla expression cannot fill the event handler attribute $sourceName: its value runs as script (for a handler the program wrote, use mvcTrusted(code))")
+            }
+            if (mvcHtmlUrlAttributeName(key)) {
+                val urlArguments: array<SyntaxExpression> = [syntaxString(outputName), value]
+                attributes.append(syntaxCall("mvcHtmlUrlAttributeValue", urlArguments))
+            } else attributes.append(mvcSyntaxAttribute(outputName, value))
         } else {
             parserFail(
                 cursor,

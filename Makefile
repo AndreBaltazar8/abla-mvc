@@ -2,7 +2,7 @@ PROJECT_DIR := $(abspath .)
 ABLAC_DIR := $(abspath ../ablac)
 COMPILER := $(ABLAC_DIR)/build/ablac
 BUILD_DIR := $(PROJECT_DIR)/build
-TESTS := mvcview_basic mvcview_attributes mvcview_component_interpolation mvcview_action mvcview_action_arguments mvcview_client mvcview_raw_text browser_runtime html_escape html_render http_helpers action_registry
+TESTS := mvcview_basic mvcview_attributes mvcview_url_policy mvcview_component_interpolation mvcview_action mvcview_action_arguments mvcview_client mvcview_raw_text browser_runtime html_escape html_render http_helpers action_registry
 
 .PHONY: all compiler example app client run test test-library clean
 
@@ -34,6 +34,11 @@ test-library:
 	@cd $(ABLAC_DIR) && \
 		if $(COMPILER) build $(PROJECT_DIR)/tests/invalid_mvcview_script_hole.ab -o $(BUILD_DIR)/invalid_mvcview_script_hole --no-cache; then \
 			echo "expected an expression inside <script> to fail"; \
+			exit 1; \
+		fi
+	@cd $(ABLAC_DIR) && \
+		if $(COMPILER) build $(PROJECT_DIR)/tests/invalid_mvcview_event_hole.ab -o $(BUILD_DIR)/invalid_mvcview_event_hole --no-cache; then \
+			echo "expected an expression in an event handler attribute to fail"; \
 			exit 1; \
 		fi
 	@cd $(ABLAC_DIR) && \
